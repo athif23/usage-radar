@@ -1,12 +1,19 @@
 use std::path::PathBuf;
+use std::time::SystemTime;
 
+use crate::panel;
 use crate::storage::cache::CachedSnapshots;
 use crate::storage::config::AppConfig;
+use crate::tray;
 
 pub struct App {
     pub config: AppConfig,
     pub cache: CachedSnapshots,
     pub startup: StartupReport,
+    pub tray: tray::State,
+    pub panel: panel::State,
+    pub refresh: RefreshState,
+    pub runtime_notice: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -34,18 +41,34 @@ pub enum FileLoadState {
     NotChecked,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RefreshReason {
+    Startup,
+    PanelOpened,
+    Manual,
+    Interval,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct RefreshState {
+    pub in_flight: bool,
+    pub queued_reason: Option<RefreshReason>,
+    pub last_reason: Option<RefreshReason>,
+    pub last_started_at: Option<SystemTime>,
+    pub last_finished_at: Option<SystemTime>,
+    pub last_error: Option<String>,
+}
+
 impl App {
     pub fn from_startup(data: StartupData) -> Self {
         Self {
             config: data.config,
             cache: data.cache,
             startup: data.report,
+            tray: tray::State::default(),
+            panel: panel::State::default(),
+            refresh: RefreshState::default(),
+            runtime_notice: None,
         }
-    }
-
-    pub fn apply_startup(&mut self, data: StartupData) {
-        self.config = data.config;
-        self.cache = data.cache;
-        self.startup = data.report;
     }
 }
