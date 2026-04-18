@@ -7,6 +7,7 @@ use crate::providers::ProviderSnapshot;
 pub enum Message {
     AppStarted,
     Tick,
+    PanelScrolled,
     RefreshRequested(RefreshReason),
     RefreshFinished(Result<Vec<ProviderSnapshot>, String>),
     HidePanel,

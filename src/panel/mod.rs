@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use iced::window;
 use iced::{Point, Size};
 use tray_icon::Rect;
@@ -12,6 +14,7 @@ pub struct State {
     pub visible: bool,
     pub scale_factor: f32,
     pub anchor: Option<Rect>,
+    pub last_scrolled_at: Option<Instant>,
 }
 
 impl Default for State {
@@ -21,7 +24,20 @@ impl Default for State {
             visible: false,
             scale_factor: 1.0,
             anchor: None,
+            last_scrolled_at: None,
         }
+    }
+}
+
+impl State {
+    pub fn note_scrolled(&mut self) {
+        self.last_scrolled_at = Some(Instant::now());
+    }
+
+    pub fn scrollbar_is_active(&self) -> bool {
+        self.last_scrolled_at
+            .map(|last| last.elapsed() <= Duration::from_millis(1400))
+            .unwrap_or(false)
     }
 }
 

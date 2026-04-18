@@ -64,6 +64,10 @@ impl App {
         match message {
             Message::AppStarted => self.handle_app_started(),
             Message::Tick => self.poll_shell_events(),
+            Message::PanelScrolled => {
+                self.panel.note_scrolled();
+                Task::none()
+            }
             Message::RefreshRequested(reason) => self.request_refresh(reason),
             Message::RefreshFinished(result) => self.handle_refresh_finished(result),
             Message::HidePanel => self.hide_panel(),
@@ -117,7 +121,21 @@ impl App {
             content = content.push(notice_view(notice, self.notice_tone()));
         }
 
-        container(scrollable(content).height(Length::Fill))
+        let scrollbar_is_active = self.panel.scrollbar_is_active();
+
+        let content = scrollable(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .direction(iced::widget::scrollable::Direction::Vertical(
+                iced::widget::scrollable::Scrollbar::new()
+                    .width(3)
+                    .scroller_width(4)
+                    .margin(1),
+            ))
+            .on_scroll(|_| Message::PanelScrolled)
+            .style(move |_theme, status| panel_scrollable_style(status, scrollbar_is_active));
+
+        container(content)
             .width(Length::Fill)
             .height(Length::Fill)
             .padding(16)
@@ -419,31 +437,30 @@ impl App {
             status_badge(self.refresh_badge_text(), self.refresh_badge_tone()),
         ]
         .spacing(8)
-        .align_y(Alignment::Center);
+        .align_y(Alignment::Center)
+        .wrap();
 
-        row![
-            column![
-                text("Usage Radar").size(28).color(color_text()),
-                text("AI limits without dashboard friction")
-                    .size(14)
-                    .color(color_muted()),
-                badges,
-            ]
-            .spacing(6)
-            .width(Length::Fill),
-            row![
-                action_button(
-                    "Refresh",
-                    Message::RefreshRequested(RefreshReason::Manual),
-                    Tone::Neutral,
-                ),
-                action_button("Hide", Message::HidePanel, Tone::Danger),
-            ]
-            .spacing(8)
-            .align_y(Alignment::Center),
+        let actions = row![
+            action_button(
+                "Refresh",
+                Message::RefreshRequested(RefreshReason::Manual),
+                Tone::Neutral,
+            ),
+            action_button("Hide", Message::HidePanel, Tone::Danger),
         ]
-        .spacing(12)
-        .align_y(Alignment::Start)
+        .spacing(8)
+        .align_y(Alignment::Center)
+        .wrap();
+
+        column![
+            text("Usage Radar").size(28).color(color_text()),
+            text("AI limits without dashboard friction")
+                .size(14)
+                .color(color_muted()),
+            badges,
+            actions,
+        ]
+        .spacing(8)
         .into()
     }
 
@@ -456,7 +473,8 @@ impl App {
                 stat_chip("Refresh", self.refresh_chip_value()),
                 stat_chip("Dismiss", self.dismiss_chip_value()),
             ]
-            .spacing(8),
+            .spacing(8)
+            .wrap(),
         ]
         .spacing(10);
 
@@ -483,7 +501,8 @@ impl App {
             footer_metric("Cache", self.cache_footer_value()),
             footer_metric("Panel", self.panel_footer_value().to_string()),
         ]
-        .spacing(8);
+        .spacing(8)
+        .wrap();
 
         container(footer)
             .width(Length::Fill)
@@ -857,7 +876,8 @@ fn provider_card(data: ProviderCardData) -> Element<'static, Message> {
     let mut body = column![
         row![text(data.title).size(18).color(color_text()), badge,]
             .align_y(Alignment::Center)
-            .spacing(10),
+            .spacing(10)
+            .wrap(),
         text(data.headline).size(15).color(color_text()),
         text(data.detail).size(13).color(color_muted()),
     ]
@@ -884,12 +904,8 @@ fn provider_card(data: ProviderCardData) -> Element<'static, Message> {
 
 fn detail_bar(data: DetailBarData) -> Element<'static, Message> {
     column![
-        row![
-            text(data.label).size(12).color(color_text()),
-            text(data.detail).size(12).color(color_muted()),
-        ]
-        .spacing(8)
-        .align_y(Alignment::Center),
+        text(data.label).size(12).color(color_text()),
+        text(data.detail).size(12).color(color_muted()),
         progress_bar(0.0..=100.0, data.percent_used)
             .height(4)
             .style(move |_theme| progress_style(data.tone)),
@@ -1180,6 +1196,84 @@ fn progress_style(tone: Tone) -> progress_bar::Style {
             width: 0.0,
             radius: 999.0.into(),
             color: Color::TRANSPARENT,
+        },
+    }
+}
+
+fn panel_scrollable_style(
+    status: iced::widget::scrollable::Status,
+    scrollbar_is_active: bool,
+) -> iced::widget::scrollable::Style {
+    let active = scroll_rail(
+        if scrollbar_is_active { 0.05 } else { 0.0 },
+        if scrollbar_is_active { 0.34 } else { 0.10 },
+    );
+    let hovered = scroll_rail(0.08, 0.72);
+    let dragged = scroll_rail(0.12, 0.88);
+
+    match status {
+        iced::widget::scrollable::Status::Active => iced::widget::scrollable::Style {
+            container: iced::widget::container::Style::default(),
+            vertical_rail: active,
+            horizontal_rail: active,
+            gap: None,
+        },
+        iced::widget::scrollable::Status::Hovered {
+            is_horizontal_scrollbar_hovered,
+            is_vertical_scrollbar_hovered,
+        } => iced::widget::scrollable::Style {
+            container: iced::widget::container::Style::default(),
+            vertical_rail: if is_vertical_scrollbar_hovered {
+                hovered
+            } else {
+                active
+            },
+            horizontal_rail: if is_horizontal_scrollbar_hovered {
+                hovered
+            } else {
+                active
+            },
+            gap: None,
+        },
+        iced::widget::scrollable::Status::Dragged {
+            is_horizontal_scrollbar_dragged,
+            is_vertical_scrollbar_dragged,
+        } => iced::widget::scrollable::Style {
+            container: iced::widget::container::Style::default(),
+            vertical_rail: if is_vertical_scrollbar_dragged {
+                dragged
+            } else {
+                active
+            },
+            horizontal_rail: if is_horizontal_scrollbar_dragged {
+                dragged
+            } else {
+                active
+            },
+            gap: None,
+        },
+    }
+}
+
+fn scroll_rail(rail_alpha: f32, scroller_alpha: f32) -> iced::widget::scrollable::Rail {
+    iced::widget::scrollable::Rail {
+        background: if rail_alpha <= 0.0 {
+            None
+        } else {
+            Some(Color::from_rgba8(255, 255, 255, rail_alpha).into())
+        },
+        border: Border {
+            width: 0.0,
+            radius: 999.0.into(),
+            color: Color::TRANSPARENT,
+        },
+        scroller: iced::widget::scrollable::Scroller {
+            color: Color::from_rgba8(196, 201, 209, scroller_alpha),
+            border: Border {
+                width: 0.0,
+                radius: 999.0.into(),
+                color: Color::TRANSPARENT,
+            },
         },
     }
 }
