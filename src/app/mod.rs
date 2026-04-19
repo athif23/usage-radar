@@ -11,9 +11,10 @@ use iced::widget::{
     button, column, container, horizontal_space, progress_bar, row, scrollable, text,
 };
 use iced::{
-    alignment, event, keyboard, window, Alignment, Border, Color, Element, Event, Length, Shadow,
-    Subscription, Task, Theme,
+    alignment, event, keyboard, window, Alignment, Border, Color, Element, Event, Font, Length,
+    Shadow, Subscription, Task, Theme,
 };
+use lucide_icons::Icon as LucideIcon;
 use tray_icon::menu::MenuEvent;
 use tray_icon::{MouseButton, MouseButtonState, TrayIconEvent};
 
@@ -631,14 +632,28 @@ impl App {
     }
 
     fn bottom_menu_view(&self) -> Element<'_, Message> {
+        let left_actions = row![
+            toolbar_icon_button(LucideIcon::Settings, Message::OpenConfigFolder),
+            toolbar_icon_button(
+                LucideIcon::RefreshCw,
+                Message::RefreshRequested(RefreshReason::Manual),
+            ),
+            toolbar_icon_button(LucideIcon::CircleHelp, Message::OpenAbout),
+        ]
+        .spacing(10)
+        .align_y(Alignment::Center);
+
         column![
             divider_line(),
-            bottom_menu_button("Refresh", Message::RefreshRequested(RefreshReason::Manual)),
-            bottom_menu_button("Settings", Message::OpenConfigFolder),
-            bottom_menu_button("About Usage Radar", Message::OpenAbout),
-            bottom_menu_button("Quit", Message::QuitRequested),
+            row![
+                left_actions,
+                horizontal_space(),
+                toolbar_icon_button(LucideIcon::X, Message::QuitRequested),
+            ]
+            .align_y(Alignment::Center)
+            .padding([10, 0]),
         ]
-        .spacing(4)
+        .spacing(0)
         .into()
     }
 
@@ -908,19 +923,22 @@ fn provider_section(section: ProviderSection) -> Element<'static, Message> {
     .into()
 }
 
-fn bottom_menu_button(
-    label: &'static str,
+fn toolbar_icon_button(
+    icon: LucideIcon,
     message: Message,
 ) -> iced::widget::Button<'static, Message> {
-    let content = container(text(label).size(14).color(color_text()))
-        .width(Length::Fill)
-        .align_x(alignment::Horizontal::Left);
-
-    button(content)
-        .width(Length::Fill)
-        .padding([6, 10])
-        .style(bottom_menu_button_style)
+    button(lucide_icon(icon))
+        .padding(9)
+        .style(toolbar_icon_button_style)
         .on_press(message)
+}
+
+fn lucide_icon(icon: LucideIcon) -> Element<'static, Message> {
+    text(char::from(icon).to_string())
+        .font(Font::with_name("lucide"))
+        .size(18)
+        .color(color_text())
+        .into()
 }
 
 fn notice_view(message: String, tone: Tone) -> Element<'static, Message> {
@@ -1095,24 +1113,37 @@ fn page_tab_style(active: bool, status: button::Status) -> button::Style {
     }
 }
 
-fn bottom_menu_button_style(_theme: &Theme, status: button::Status) -> button::Style {
-    let background = match status {
-        button::Status::Hovered => Color::from_rgba8(255, 255, 255, 0.04),
-        button::Status::Pressed => Color::from_rgba8(255, 255, 255, 0.07),
-        button::Status::Disabled => Color::TRANSPARENT,
-        button::Status::Active => Color::TRANSPARENT,
+fn toolbar_icon_button_style(_theme: &Theme, status: button::Status) -> button::Style {
+    let (background, border_color, text_color) = match status {
+        button::Status::Hovered => (
+            Color::from_rgba8(255, 255, 255, 0.10),
+            Color::from_rgba8(255, 255, 255, 0.18),
+            color_text(),
+        ),
+        button::Status::Pressed => (
+            Color::from_rgba8(255, 255, 255, 0.14),
+            Color::from_rgba8(255, 255, 255, 0.24),
+            color_text(),
+        ),
+        button::Status::Disabled => (
+            Color::from_rgba8(255, 255, 255, 0.04),
+            Color::from_rgba8(255, 255, 255, 0.08),
+            Color::from_rgb8(120, 126, 134),
+        ),
+        button::Status::Active => (
+            Color::from_rgba8(255, 255, 255, 0.06),
+            Color::from_rgba8(255, 255, 255, 0.12),
+            color_text(),
+        ),
     };
 
     button::Style {
         background: Some(background.into()),
-        text_color: match status {
-            button::Status::Disabled => Color::from_rgb8(120, 126, 134),
-            _ => color_text(),
-        },
+        text_color,
         border: Border {
-            width: 0.0,
-            radius: 10.0.into(),
-            color: Color::TRANSPARENT,
+            width: 1.0,
+            radius: 999.0.into(),
+            color: border_color,
         },
         shadow: Shadow::default(),
     }
