@@ -58,7 +58,7 @@ pub fn settings(visible: bool, skip_taskbar: bool, position: Option<Point>) -> w
         visible,
         resizable: false,
         decorations: false,
-        transparent: true,
+        transparent: false,
         level: window::Level::Normal,
         exit_on_close_request: false,
         platform_specific: window::settings::PlatformSpecific {

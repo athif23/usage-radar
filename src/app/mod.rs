@@ -120,7 +120,7 @@ impl App {
             return container(text("")).into();
         }
 
-        let mut body = column![self.page_content_view()].spacing(14);
+        let mut body = column![self.page_content_view()].spacing(10);
 
         if let Some(notice) = self.notice_text() {
             body = body.push(notice_view(notice, self.notice_tone()));
@@ -145,15 +145,21 @@ impl App {
             scrollable_body,
             self.bottom_menu_view()
         ]
-        .spacing(14)
+        .spacing(10)
         .height(Length::Fill);
 
-        container(layout)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .padding(16)
-            .style(panel_shell_style)
-            .into()
+        container(
+            container(layout)
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .padding(12)
+                .style(panel_shell_style),
+        )
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .padding(2)
+        .style(window_backdrop_style)
+        .into()
     }
 
     fn handle_app_started(&mut self) -> Task<Message> {
@@ -552,10 +558,10 @@ impl App {
                 provider_accent(ProviderKind::ClaudeCode),
             ),
         ]
-        .spacing(8)
+        .spacing(6)
         .align_y(Alignment::Start);
 
-        column![tabs, divider_line()].spacing(10).into()
+        column![tabs, divider_line()].spacing(6).into()
     }
 
     fn page_content_view(&self) -> Element<'_, Message> {
@@ -574,13 +580,13 @@ impl App {
             provider_card(self.provider_card_model(ProviderKind::Codex)),
             provider_card(self.provider_card_model(ProviderKind::Copilot)),
         ]
-        .spacing(18)
+        .spacing(14)
         .into()
     }
 
     fn provider_page_view(&self, kind: ProviderKind) -> Element<'_, Message> {
         column![provider_card(self.provider_card_model(kind))]
-            .spacing(18)
+            .spacing(14)
             .into()
     }
 
@@ -603,7 +609,7 @@ impl App {
             .unwrap_or_else(|| "Unavailable".to_string());
 
         let card = column![
-            text("Usage Radar").size(22).color(color_text()),
+            text("Usage Radar").size(21).color(color_text()),
             text("Tray-first usage monitor for local AI tools.")
                 .size(14)
                 .color(color_text()),
@@ -621,11 +627,11 @@ impl App {
                 .size(12)
                 .color(color_muted()),
         ]
-        .spacing(10);
+        .spacing(8);
 
         container(card)
             .width(Length::Fill)
-            .padding(18)
+            .padding(14)
             .style(|_theme| provider_card_style(color_border()))
             .into()
     }
@@ -638,7 +644,7 @@ impl App {
             bottom_menu_button("About Usage Radar", Message::OpenAbout),
             bottom_menu_button("Quit", Message::QuitRequested),
         ]
-        .spacing(6)
+        .spacing(4)
         .into()
     }
 
@@ -806,13 +812,9 @@ fn page_tab_button(
     icon: TabIcon,
     active: bool,
     message: Message,
-    accent: Color,
+    _accent: Color,
 ) -> Element<'static, Message> {
     let icon_color = if active { color_text() } else { color_muted() };
-    let indicator = container(text(""))
-        .width(Length::Fill)
-        .height(4)
-        .style(move |_theme| tab_indicator_style(active, accent));
 
     let content = column![
         container(tab_icon(icon, icon_color))
@@ -821,16 +823,15 @@ fn page_tab_button(
         text(label)
             .size(13)
             .color(if active { color_text() } else { color_muted() }),
-        indicator,
     ]
-    .spacing(8)
+    .spacing(4)
     .align_x(alignment::Horizontal::Center)
     .width(Length::Fill);
 
     container(
         button(content)
             .width(Length::Fill)
-            .padding([12, 8])
+            .padding([8, 6])
             .style(move |_theme, status| page_tab_style(active, status))
             .on_press(message),
     )
@@ -840,8 +841,8 @@ fn page_tab_button(
 
 fn tab_icon(icon: TabIcon, color: Color) -> Element<'static, Message> {
     svg::Svg::new(tab_icon_handle(icon))
-        .width(Length::Fixed(18.0))
-        .height(Length::Fixed(18.0))
+        .width(Length::Fixed(16.0))
+        .height(Length::Fixed(16.0))
         .style(move |_theme, _status| svg::Style { color: Some(color) })
         .into()
 }
@@ -863,7 +864,7 @@ fn tab_icon_handle(icon: TabIcon) -> svg::Handle {
 }
 
 fn provider_card(model: ProviderCardModel) -> Element<'static, Message> {
-    let mut body = column![text(model.title).size(18).color(color_text())].spacing(12);
+    let mut body = column![text(model.title).size(17).color(color_text())].spacing(8);
 
     if let Some(subtitle) = model.subtitle {
         body = body.push(text(subtitle).size(12).color(color_muted()));
@@ -883,14 +884,14 @@ fn provider_card(model: ProviderCardModel) -> Element<'static, Message> {
 
     container(body)
         .width(Length::Fill)
-        .padding(18)
+        .padding(14)
         .style(move |_theme| provider_card_style(model.accent))
         .into()
 }
 
 fn provider_section(section: ProviderSection) -> Element<'static, Message> {
     column![
-        text(section.title).size(15).color(color_text()),
+        text(section.title).size(14).color(color_text()),
         progress_bar(0.0..=100.0, section.progress)
             .height(8)
             .style(move |_theme| progress_style(section.accent)),
@@ -901,7 +902,7 @@ fn provider_section(section: ProviderSection) -> Element<'static, Message> {
         ]
         .align_y(Alignment::Center),
     ]
-    .spacing(8)
+    .spacing(6)
     .into()
 }
 
@@ -909,13 +910,13 @@ fn bottom_menu_button(
     label: &'static str,
     message: Message,
 ) -> iced::widget::Button<'static, Message> {
-    let content = container(text(label).size(16).color(color_text()))
+    let content = container(text(label).size(14).color(color_text()))
         .width(Length::Fill)
         .align_x(alignment::Horizontal::Left);
 
     button(content)
         .width(Length::Fill)
-        .padding([10, 12])
+        .padding([6, 10])
         .style(bottom_menu_button_style)
         .on_press(message)
 }
@@ -1029,19 +1030,22 @@ fn tone_colors(tone: Tone) -> ToneColors {
     }
 }
 
+fn window_backdrop_style(_theme: &Theme) -> iced::widget::container::Style {
+    iced::widget::container::Style {
+        background: Some(surface_window().into()),
+        ..Default::default()
+    }
+}
+
 fn panel_shell_style(_theme: &Theme) -> iced::widget::container::Style {
     iced::widget::container::Style {
         background: Some(surface_shell().into()),
         border: Border {
             width: 1.0,
-            radius: 18.0.into(),
+            radius: 16.0.into(),
             color: color_border(),
         },
-        shadow: Shadow {
-            color: Color::from_rgba8(0, 0, 0, 0.14),
-            offset: iced::Vector::new(0.0, 3.0),
-            blur_radius: 12.0,
-        },
+        shadow: Shadow::default(),
         ..Default::default()
     }
 }
@@ -1051,7 +1055,7 @@ fn provider_card_style(_accent: Color) -> iced::widget::container::Style {
         background: Some(surface_card().into()),
         border: Border {
             width: 1.0,
-            radius: 18.0.into(),
+            radius: 16.0.into(),
             color: color_border(),
         },
         ..Default::default()
@@ -1093,25 +1097,6 @@ fn page_tab_style(active: bool, status: button::Status) -> button::Style {
             color: Color::TRANSPARENT,
         },
         shadow: Shadow::default(),
-    }
-}
-
-fn tab_indicator_style(active: bool, accent: Color) -> iced::widget::container::Style {
-    iced::widget::container::Style {
-        background: Some(
-            if active {
-                accent
-            } else {
-                Color::from_rgba8(255, 255, 255, 0.16)
-            }
-            .into(),
-        ),
-        border: Border {
-            width: 0.0,
-            radius: 999.0.into(),
-            color: Color::TRANSPARENT,
-        },
-        ..Default::default()
     }
 }
 
@@ -1278,6 +1263,10 @@ fn color_warning_text() -> Color {
 
 fn color_warning_border() -> Color {
     color_rgb(117, 93, 56)
+}
+
+fn surface_window() -> Color {
+    color_rgb(46, 46, 48)
 }
 
 fn surface_shell() -> Color {
