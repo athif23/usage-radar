@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::time::SystemTime;
 
 use crate::panel;
+use crate::providers::copilot::DeviceCodePrompt;
 use crate::storage::cache::CachedSnapshots;
 use crate::storage::config::AppConfig;
 use crate::tray;
@@ -13,6 +14,7 @@ pub struct App {
     pub tray: tray::State,
     pub panel: panel::State,
     pub refresh: RefreshState,
+    pub copilot_auth: CopilotAuthState,
     pub runtime_notice: Option<String>,
 }
 
@@ -59,6 +61,19 @@ pub struct RefreshState {
     pub last_error: Option<String>,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct CopilotAuthState {
+    pub requesting: bool,
+    pub device_code: Option<DeviceCodePrompt>,
+    pub last_error: Option<String>,
+}
+
+impl CopilotAuthState {
+    pub fn is_busy(&self) -> bool {
+        self.requesting || self.device_code.is_some()
+    }
+}
+
 impl App {
     pub fn from_startup(data: StartupData) -> Self {
         let mut panel = panel::State::default();
@@ -71,6 +86,7 @@ impl App {
             tray: tray::State::default(),
             panel,
             refresh: RefreshState::default(),
+            copilot_auth: CopilotAuthState::default(),
             runtime_notice: None,
         }
     }

@@ -1,7 +1,8 @@
 use iced::window;
 
 use crate::app::state::RefreshReason;
-use crate::providers::{ProviderKind, ProviderSnapshot};
+use crate::providers::copilot::DeviceCodePrompt;
+use crate::providers::{ProviderKind, RefreshOutcome};
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -11,8 +12,12 @@ pub enum Message {
     SelectPage(Option<ProviderKind>),
     OpenAbout,
     OpenConfigFolder,
+    OpenCopilotVerification,
+    CopilotConnectRequested,
+    CopilotDeviceCodeReceived(Result<DeviceCodePrompt, String>),
+    CopilotSignInFinished(Result<(), String>),
     RefreshRequested(RefreshReason),
-    RefreshFinished(Result<Vec<ProviderSnapshot>, String>),
+    RefreshFinished(Vec<RefreshOutcome>),
     QuitRequested,
     EscapePressed(window::Id),
     PanelOpened(window::Id),

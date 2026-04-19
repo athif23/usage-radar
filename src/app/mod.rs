@@ -18,7 +18,7 @@ use lucide_icons::Icon as LucideIcon;
 use tray_icon::menu::MenuEvent;
 use tray_icon::{MouseButton, MouseButtonState, TrayIconEvent};
 
-use crate::providers::{ProviderKind, ProviderSnapshot};
+use crate::providers::{self, Confidence, ProviderKind, ProviderSnapshot};
 use crate::storage::{cache as cache_store, config as config_store};
 use crate::util::paths;
 
@@ -80,8 +80,14 @@ impl App {
                 Task::none()
             }
             Message::OpenConfigFolder => self.open_config_folder(),
+            Message::OpenCopilotVerification => self.open_copilot_verification(),
+            Message::CopilotConnectRequested => self.start_copilot_sign_in(),
+            Message::CopilotDeviceCodeReceived(result) => {
+                self.handle_copilot_device_code_received(result)
+            }
+            Message::CopilotSignInFinished(result) => self.handle_copilot_sign_in_finished(result),
             Message::RefreshRequested(reason) => self.request_refresh(reason),
-            Message::RefreshFinished(result) => self.handle_refresh_finished(result),
+            Message::RefreshFinished(outcomes) => self.handle_refresh_finished(outcomes),
             Message::QuitRequested => iced::exit(),
             Message::EscapePressed(id) => {
                 if self.panel.id == Some(id) && self.panel.visible {
@@ -301,20 +307,96 @@ impl App {
                     return Task::none();
                 }
 
-                match Command::new("explorer").arg(&path).spawn() {
-                    Ok(_) => {
-                        self.runtime_notice = None;
-                    }
-                    Err(error) => {
-                        self.runtime_notice = Some(format!(
-                            "Failed to open config directory {}: {error}",
-                            path.display()
-                        ));
-                    }
-                }
+                self.open_external_target(&path.display().to_string(), "config directory")
             }
             Err(error) => {
                 self.runtime_notice = Some(error);
+                Task::none()
+            }
+        }
+    }
+
+    fn open_copilot_verification(&mut self) -> Task<Message> {
+        let Some(target) = self
+            .copilot_auth
+            .device_code
+            .as_ref()
+            .map(|prompt| prompt.verification_url.clone())
+        else {
+            return Task::none();
+        };
+
+        self.open_external_target(&target, "GitHub sign-in page")
+    }
+
+    fn start_copilot_sign_in(&mut self) -> Task<Message> {
+        if self.copilot_auth.is_busy() {
+            return Task::none();
+        }
+
+        self.copilot_auth.requesting = true;
+        self.copilot_auth.device_code = None;
+        self.copilot_auth.last_error = None;
+
+        Task::perform(
+            crate::providers::copilot::request_device_code(),
+            Message::CopilotDeviceCodeReceived,
+        )
+    }
+
+    fn handle_copilot_device_code_received(
+        &mut self,
+        result: Result<crate::providers::copilot::DeviceCodePrompt, String>,
+    ) -> Task<Message> {
+        self.copilot_auth.requesting = false;
+
+        match result {
+            Ok(prompt) => {
+                self.copilot_auth.last_error = None;
+                self.copilot_auth.device_code = Some(prompt.clone());
+                let _ = self.open_external_target(&prompt.verification_url, "GitHub sign-in page");
+
+                Task::perform(
+                    async move {
+                        let token = crate::providers::copilot::poll_for_token(&prompt).await?;
+                        crate::providers::copilot::store_token(&token)
+                    },
+                    Message::CopilotSignInFinished,
+                )
+            }
+            Err(error) => {
+                self.copilot_auth.device_code = None;
+                self.copilot_auth.last_error = Some(error);
+                Task::none()
+            }
+        }
+    }
+
+    fn handle_copilot_sign_in_finished(&mut self, result: Result<(), String>) -> Task<Message> {
+        self.copilot_auth.requesting = false;
+        self.copilot_auth.device_code = None;
+
+        match result {
+            Ok(()) => {
+                self.copilot_auth.last_error = None;
+                self.request_refresh(RefreshReason::Manual)
+            }
+            Err(error) => {
+                self.copilot_auth.last_error = Some(error);
+                Task::none()
+            }
+        }
+    }
+
+    fn open_external_target(&mut self, target: &str, label: &str) -> Task<Message> {
+        match Command::new("explorer").arg(target).spawn() {
+            Ok(_) => {
+                if self.runtime_notice == self.tray.init_error {
+                    self.runtime_notice = None;
+                }
+            }
+            Err(error) => {
+                self.runtime_notice = Some(format!("Failed to open {label} {target}: {error}"));
             }
         }
 
@@ -332,37 +414,44 @@ impl App {
         self.refresh.last_started_at = Some(SystemTime::now());
         self.refresh.last_error = None;
 
-        Task::perform(
-            async {
-                crate::providers::codex::fetch_snapshot()
-                    .await
-                    .map(|snapshot| vec![snapshot])
-            },
-            Message::RefreshFinished,
-        )
+        Task::perform(providers::refresh_all(), Message::RefreshFinished)
     }
 
     fn handle_refresh_finished(
         &mut self,
-        result: Result<Vec<ProviderSnapshot>, String>,
+        outcomes: Vec<crate::providers::RefreshOutcome>,
     ) -> Task<Message> {
         self.refresh.in_flight = false;
         self.refresh.last_finished_at = Some(SystemTime::now());
 
-        match result {
-            Ok(providers) => {
-                self.refresh.last_error = None;
-                if self.runtime_notice == self.tray.init_error {
-                    self.runtime_notice = None;
+        let mut errors = Vec::new();
+        let mut had_success = false;
+
+        for outcome in outcomes {
+            match outcome.result {
+                Ok(snapshot) => {
+                    had_success = true;
+                    self.merge_provider_snapshots(vec![snapshot]);
                 }
-                self.merge_provider_snapshots(providers);
-                self.persist_cache();
-            }
-            Err(error) => {
-                self.refresh.last_error = Some(error.clone());
-                self.apply_refresh_failure(&error);
+                Err(error) => {
+                    errors.push(format!("{}: {error}", provider_ui_label(outcome.kind)));
+                    self.apply_refresh_failure(outcome.kind, &error);
+                }
             }
         }
+
+        if had_success {
+            self.persist_cache();
+            if self.runtime_notice == self.tray.init_error {
+                self.runtime_notice = None;
+            }
+        }
+
+        self.refresh.last_error = if errors.is_empty() {
+            None
+        } else {
+            Some(errors.join("  •  "))
+        };
 
         if let Some(reason) = self.refresh.queued_reason.take() {
             self.request_refresh(reason)
@@ -424,14 +513,16 @@ impl App {
         }
     }
 
-    fn apply_refresh_failure(&mut self, error: &str) {
+    fn apply_refresh_failure(&mut self, kind: ProviderKind, error: &str) {
         let Some(snapshot) = self
             .cache
             .providers
             .iter_mut()
-            .find(|snapshot| snapshot.kind == ProviderKind::Codex)
+            .find(|snapshot| snapshot.kind == kind)
         else {
-            self.runtime_notice = Some(error.to_string());
+            self.cache
+                .providers
+                .push(provider_failure_snapshot(kind, error));
             return;
         };
 
@@ -580,7 +671,47 @@ impl App {
     }
 
     fn provider_page_view(&self, kind: ProviderKind) -> Element<'_, Message> {
+        if kind == ProviderKind::Copilot {
+            return self.copilot_page_view();
+        }
+
         container(column![provider_panel(self.provider_card_model(kind), false)].spacing(10))
+            .width(Length::Fill)
+            .padding(Padding::ZERO.top(10.0).left(10.0).right(10.0))
+            .into()
+    }
+
+    fn copilot_page_view(&self) -> Element<'_, Message> {
+        let mut body = column![provider_panel(
+            self.provider_card_model(ProviderKind::Copilot),
+            false
+        )]
+        .spacing(12);
+
+        if self.copilot_auth.requesting {
+            body = body.push(action_status_card(
+                "Starting GitHub sign-in",
+                "Requesting a device code from GitHub...",
+            ));
+        }
+
+        if let Some(prompt) = self.copilot_auth.device_code.as_ref() {
+            body = body.push(copilot_waiting_card(prompt));
+        }
+
+        if let Some(error) = self.copilot_auth.last_error.as_ref() {
+            body = body.push(action_status_card("GitHub sign-in failed", error));
+        }
+
+        if self.should_show_copilot_connect_button() {
+            body = body.push(primary_action_button(
+                "Sign in with GitHub",
+                provider_accent(ProviderKind::Copilot),
+                Message::CopilotConnectRequested,
+            ));
+        }
+
+        container(body)
             .width(Length::Fill)
             .padding(Padding::ZERO.top(10.0).left(10.0).right(10.0))
             .into()
@@ -610,7 +741,7 @@ impl App {
                 .size(14)
                 .color(color_text()),
             text(
-                "Codex is wired first. Copilot, Claude, and Gemini stay honest until trustworthy local sources are implemented."
+                "Codex is wired first. Copilot uses GitHub sign-in plus GitHub's Copilot usage API. Claude and Gemini stay honest until trustworthy sources are implemented."
             )
             .size(13)
             .color(color_muted()),
@@ -679,6 +810,26 @@ impl App {
                             .to_string(),
                     ),
                 },
+                ProviderKind::Copilot => ProviderCardModel {
+                    title,
+                    accent,
+                    subtitle: None,
+                    sections: Vec::new(),
+                    headline: Some(if self.copilot_auth.is_busy() {
+                        "Finishing GitHub sign-in".to_string()
+                    } else if self.refresh.in_flight {
+                        "Checking Copilot status".to_string()
+                    } else {
+                        "GitHub sign-in required".to_string()
+                    }),
+                    detail: Some(if self.copilot_auth.is_busy() {
+                        "Finish the GitHub device flow to let Usage Radar fetch Copilot usage."
+                            .to_string()
+                    } else {
+                        "Use the Copilot page to sign in with GitHub before Usage Radar reads Copilot usage."
+                            .to_string()
+                    }),
+                },
                 _ => ProviderCardModel {
                     title,
                     accent,
@@ -697,11 +848,7 @@ impl App {
             return ProviderCardModel {
                 title,
                 accent,
-                subtitle: if snapshot.stale {
-                    Some("Last known snapshot".to_string())
-                } else {
-                    None
-                },
+                subtitle: snapshot_subtitle(snapshot),
                 sections: Vec::new(),
                 headline: Some("No trustworthy value available".to_string()),
                 detail: Some(first_meaningful_note(snapshot).unwrap_or_else(|| {
@@ -717,11 +864,7 @@ impl App {
             return ProviderCardModel {
                 title,
                 accent,
-                subtitle: if snapshot.stale {
-                    Some("Last known snapshot".to_string())
-                } else {
-                    None
-                },
+                subtitle: snapshot_subtitle(snapshot),
                 sections,
                 headline: Some("Snapshot available".to_string()),
                 detail: Some(first_meaningful_note(snapshot).unwrap_or_else(|| {
@@ -734,11 +877,7 @@ impl App {
         ProviderCardModel {
             title,
             accent,
-            subtitle: if snapshot.stale {
-                Some("Last known snapshot".to_string())
-            } else {
-                None
-            },
+            subtitle: snapshot_subtitle(snapshot),
             sections,
             headline: None,
             detail: None,
@@ -750,6 +889,17 @@ impl App {
             .providers
             .iter()
             .find(|snapshot| snapshot.kind == kind)
+    }
+
+    fn should_show_copilot_connect_button(&self) -> bool {
+        if self.copilot_auth.is_busy() {
+            return false;
+        }
+
+        match self.snapshot(ProviderKind::Copilot) {
+            Some(snapshot) => snapshot.unavailable || snapshot.detail_bars.is_empty(),
+            None => true,
+        }
     }
 
     fn notice_text(&self) -> Option<String> {
@@ -924,6 +1074,69 @@ fn provider_section(section: ProviderSection) -> Element<'static, Message> {
     .into()
 }
 
+fn action_status_card(title: &'static str, detail: &str) -> Element<'static, Message> {
+    container(
+        column![
+            text(title).size(14).color(color_text()),
+            text(detail.to_string()).size(12).color(color_muted()),
+        ]
+        .spacing(6),
+    )
+    .width(Length::Fill)
+    .padding(12)
+    .style(|_theme| provider_card_style(color_border()))
+    .into()
+}
+
+fn copilot_waiting_card(
+    prompt: &crate::providers::copilot::DeviceCodePrompt,
+) -> Element<'static, Message> {
+    container(
+        column![
+            text("Finish GitHub sign-in").size(14).color(color_text()),
+            text("A browser tab should already be open. If not, open GitHub manually below and finish approval.")
+                .size(12)
+                .color(color_muted()),
+            container(text(prompt.user_code.clone()).size(20).color(color_text()))
+                .padding([10, 12])
+                .style(|_theme| iced::widget::container::Style {
+                    background: Some(surface_shell().into()),
+                    border: Border {
+                        width: 1.0,
+                        radius: 12.0.into(),
+                        color: color_border(),
+                    },
+                    ..Default::default()
+                }),
+            text(prompt.verification_uri.clone())
+                .size(12)
+                .color(color_muted()),
+            primary_action_button(
+                "Open GitHub",
+                provider_accent(ProviderKind::Copilot),
+                Message::OpenCopilotVerification,
+            ),
+        ]
+        .spacing(10),
+    )
+    .width(Length::Fill)
+    .padding(12)
+    .style(|_theme| provider_card_style(color_border()))
+    .into()
+}
+
+fn primary_action_button(
+    label: &'static str,
+    accent: Color,
+    message: Message,
+) -> iced::widget::Button<'static, Message> {
+    button(text(label).size(13).color(color_text()))
+        .width(Length::Fill)
+        .padding([10, 12])
+        .style(move |_theme, status| primary_action_button_style(accent, status))
+        .on_press(message)
+}
+
 fn toolbar_icon_button(
     icon: LucideIcon,
     message: Message,
@@ -1018,6 +1231,40 @@ fn first_meaningful_note(snapshot: &ProviderSnapshot) -> Option<String> {
         .find(|note| !note.starts_with("Plan:"))
         .cloned()
         .or_else(|| snapshot.notes.first().cloned())
+}
+
+fn snapshot_subtitle(snapshot: &ProviderSnapshot) -> Option<String> {
+    if snapshot.stale {
+        return match snapshot.confidence {
+            Confidence::Partial => Some("Last known snapshot · Partial data".to_string()),
+            Confidence::Estimated => Some("Last known snapshot · Estimated".to_string()),
+            Confidence::Exact => Some("Last known snapshot".to_string()),
+        };
+    }
+
+    if snapshot.unavailable {
+        return None;
+    }
+
+    match snapshot.confidence {
+        Confidence::Partial => Some("Partial data".to_string()),
+        Confidence::Estimated => Some("Estimated".to_string()),
+        Confidence::Exact => None,
+    }
+}
+
+fn provider_failure_snapshot(kind: ProviderKind, error: &str) -> ProviderSnapshot {
+    ProviderSnapshot {
+        kind,
+        visible: true,
+        confidence: Confidence::Partial,
+        fetched_at: SystemTime::now(),
+        stale: true,
+        unavailable: true,
+        summary_bar: None,
+        detail_bars: Vec::new(),
+        notes: vec![format!("Refresh error: {error}")],
+    }
 }
 
 fn format_reset_text(reset_at: Option<SystemTime>) -> String {
@@ -1134,6 +1381,26 @@ fn toolbar_icon_button_style(_theme: &Theme, status: button::Status) -> button::
         border: Border {
             width: 0.0,
             radius: 999.0.into(),
+            color: Color::TRANSPARENT,
+        },
+        shadow: Shadow::default(),
+    }
+}
+
+fn primary_action_button_style(accent: Color, status: button::Status) -> button::Style {
+    let background = match status {
+        button::Status::Hovered => Color { a: 1.0, ..accent },
+        button::Status::Pressed => Color::from_rgba(accent.r, accent.g, accent.b, 0.86),
+        button::Status::Disabled => Color::from_rgba8(255, 255, 255, 0.08),
+        button::Status::Active => accent,
+    };
+
+    button::Style {
+        background: Some(background.into()),
+        text_color: color_text(),
+        border: Border {
+            width: 0.0,
+            radius: 12.0.into(),
             color: Color::TRANSPARENT,
         },
         shadow: Shadow::default(),
