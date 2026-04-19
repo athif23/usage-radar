@@ -6,8 +6,8 @@ use tray_icon::Rect;
 
 use crate::providers::ProviderKind;
 
-pub const WIDTH: f32 = 384.0;
-pub const HEIGHT: f32 = 520.0;
+pub const WIDTH: f32 = 480.0;
+pub const HEIGHT: f32 = 720.0;
 const EDGE_MARGIN: f32 = 8.0;
 
 #[derive(Debug, Clone)]
@@ -16,7 +16,7 @@ pub struct State {
     pub visible: bool,
     pub scale_factor: f32,
     pub anchor: Option<Rect>,
-    pub selected_provider: ProviderKind,
+    pub selected_provider: Option<ProviderKind>,
     pub last_scrolled_at: Option<Instant>,
 }
 
@@ -27,7 +27,7 @@ impl Default for State {
             visible: false,
             scale_factor: 1.0,
             anchor: None,
-            selected_provider: ProviderKind::Codex,
+            selected_provider: None,
             last_scrolled_at: None,
         }
     }

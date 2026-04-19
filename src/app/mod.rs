@@ -6,9 +6,11 @@ use std::fs;
 use std::process::Command;
 use std::time::{Duration, SystemTime};
 
-use iced::widget::{button, column, container, progress_bar, row, scrollable, text};
+use iced::widget::{
+    button, column, container, horizontal_space, progress_bar, row, scrollable, text,
+};
 use iced::{
-    event, keyboard, window, Alignment, Border, Color, Element, Event, Length, Shadow,
+    alignment, event, keyboard, window, Alignment, Border, Color, Element, Event, Length, Shadow,
     Subscription, Task, Theme,
 };
 use tray_icon::menu::MenuEvent;
@@ -70,11 +72,11 @@ impl App {
                 self.panel.note_scrolled();
                 Task::none()
             }
-            Message::SelectProvider(kind) => self.handle_select_provider(kind),
+            Message::SelectPage(selected_provider) => self.handle_select_page(selected_provider),
             Message::OpenConfigFolder => self.open_config_folder(),
             Message::RefreshRequested(reason) => self.request_refresh(reason),
             Message::RefreshFinished(result) => self.handle_refresh_finished(result),
-            Message::HidePanel => self.hide_panel(),
+            Message::QuitRequested => iced::exit(),
             Message::EscapePressed(id) => {
                 if self.panel.id == Some(id) && self.panel.visible {
                     self.hide_panel()
@@ -113,13 +115,13 @@ impl App {
             return container(text("")).into();
         }
 
-        let mut content = column![self.top_bar_view(), self.selected_provider_view()].spacing(10);
+        let mut body = column![self.page_content_view()].spacing(14);
 
         if let Some(notice) = self.notice_text() {
-            content = content.push(notice_view(notice, self.notice_tone()));
+            body = body.push(notice_view(notice, self.notice_tone()));
         }
 
-        let scrollable_content = scrollable(content)
+        let scrollable_body = scrollable(body)
             .width(Length::Fill)
             .height(Length::Fill)
             .direction(iced::widget::scrollable::Direction::Vertical(
@@ -133,14 +135,18 @@ impl App {
                 panel_scrollable_style(status, self.panel.scrollbar_is_active())
             });
 
-        let layout = column![scrollable_content, self.bottom_bar_view()]
-            .spacing(12)
-            .height(Length::Fill);
+        let layout = column![
+            self.top_tabs_view(),
+            scrollable_body,
+            self.bottom_menu_view()
+        ]
+        .spacing(14)
+        .height(Length::Fill);
 
         container(layout)
             .width(Length::Fill)
             .height(Length::Fill)
-            .padding(14)
+            .padding(16)
             .style(panel_shell_style)
             .into()
     }
@@ -270,12 +276,9 @@ impl App {
         }
     }
 
-    fn handle_select_provider(&mut self, kind: ProviderKind) -> Task<Message> {
-        self.panel.selected_provider = match kind {
-            ProviderKind::Copilot => ProviderKind::Copilot,
-            _ => ProviderKind::Codex,
-        };
-        self.config.selected_provider = Some(self.panel.selected_provider);
+    fn handle_select_page(&mut self, selected_provider: Option<ProviderKind>) -> Task<Message> {
+        self.panel.selected_provider = selected_provider;
+        self.config.selected_provider = selected_provider;
         self.persist_config();
         Task::none()
     }
@@ -495,188 +498,153 @@ impl App {
             .map(|rect| crate::panel::anchor_point(rect, self.panel.scale_factor))
     }
 
-    fn top_bar_view(&self) -> Element<'_, Message> {
-        row![
-            text(self.refresh_status_text())
-                .size(12)
-                .color(color_muted())
-                .width(Length::Fill),
-            icon_button(
-                "↻",
-                Message::RefreshRequested(RefreshReason::Manual),
-                Tone::Neutral,
-            ),
-            icon_button("×", Message::HidePanel, Tone::Neutral),
-        ]
-        .spacing(6)
-        .align_y(Alignment::Center)
-        .into()
-    }
-
-    fn selected_provider_view(&self) -> Element<'_, Message> {
-        provider_card(self.provider_card_data(self.panel.selected_provider))
-    }
-
-    fn bottom_bar_view(&self) -> Element<'_, Message> {
+    fn top_tabs_view(&self) -> Element<'_, Message> {
         let tabs = row![
-            provider_tab_button(
-                ProviderKind::Codex,
-                self.panel.selected_provider == ProviderKind::Codex,
-                self.provider_tab_tone(ProviderKind::Codex),
+            page_tab_button("Home", None, self.panel.selected_provider, accent_home()),
+            page_tab_button(
+                "Codex",
+                Some(ProviderKind::Codex),
+                self.panel.selected_provider,
+                provider_accent(ProviderKind::Codex),
             ),
-            provider_tab_button(
-                ProviderKind::Copilot,
-                self.panel.selected_provider == ProviderKind::Copilot,
-                self.provider_tab_tone(ProviderKind::Copilot),
+            page_tab_button(
+                "Copilot",
+                Some(ProviderKind::Copilot),
+                self.panel.selected_provider,
+                provider_accent(ProviderKind::Copilot),
+            ),
+            page_tab_button(
+                "Gemini",
+                Some(ProviderKind::GeminiCli),
+                self.panel.selected_provider,
+                provider_accent(ProviderKind::GeminiCli),
+            ),
+            page_tab_button(
+                "Claude",
+                Some(ProviderKind::ClaudeCode),
+                self.panel.selected_provider,
+                provider_accent(ProviderKind::ClaudeCode),
             ),
         ]
-        .spacing(6)
-        .align_y(Alignment::Center)
-        .width(Length::Fill);
+        .spacing(8)
+        .align_y(Alignment::Center);
 
-        container(
-            row![
-                tabs,
-                icon_button("⚙", Message::OpenConfigFolder, Tone::Neutral)
-            ]
-            .spacing(8)
-            .align_y(Alignment::Center),
-        )
-        .width(Length::Fill)
-        .padding([8, 10])
-        .style(bottom_bar_style)
+        column![tabs, divider_line()].spacing(10).into()
+    }
+
+    fn page_content_view(&self) -> Element<'_, Message> {
+        match self.panel.selected_provider {
+            None => self.home_page_view(),
+            Some(kind) => self.provider_page_view(kind),
+        }
+    }
+
+    fn home_page_view(&self) -> Element<'_, Message> {
+        column![
+            provider_card(self.provider_card_model(ProviderKind::Codex)),
+            provider_card(self.provider_card_model(ProviderKind::Copilot)),
+        ]
+        .spacing(18)
         .into()
     }
 
-    fn provider_tab_tone(&self, kind: ProviderKind) -> Tone {
-        self.snapshot(kind)
-            .and_then(|snapshot| snapshot.summary_bar.as_ref())
-            .map(|bar| tone_for_percent_left(bar.percent_left))
-            .unwrap_or(Tone::Neutral)
+    fn provider_page_view(&self, kind: ProviderKind) -> Element<'_, Message> {
+        column![provider_card(self.provider_card_model(kind))]
+            .spacing(18)
+            .into()
     }
 
-    fn provider_card_data(&self, kind: ProviderKind) -> ProviderCardData {
+    fn bottom_menu_view(&self) -> Element<'_, Message> {
+        column![
+            divider_line(),
+            bottom_menu_button("Refresh", Message::RefreshRequested(RefreshReason::Manual),),
+            bottom_menu_button("Settings", Message::OpenConfigFolder),
+            bottom_menu_button("Quit", Message::QuitRequested),
+        ]
+        .spacing(4)
+        .into()
+    }
+
+    fn provider_card_model(&self, kind: ProviderKind) -> ProviderCardModel {
+        let title = provider_ui_label(kind);
+        let accent = provider_accent(kind);
+
         let Some(snapshot) = self.snapshot(kind) else {
-            return match kind {
-                ProviderKind::Codex => ProviderCardData {
-                    title: kind.label(),
-                    tone: Tone::Neutral,
-                    badge: if self.refresh.in_flight {
-                        "Refreshing".to_string()
-                    } else {
-                        "Waiting".to_string()
-                    },
-                    headline: if self.refresh.in_flight {
-                        "Checking usage now".to_string()
-                    } else {
-                        "No local snapshot yet".to_string()
-                    },
-                    detail: "The card will fill in once the Codex usage source responds.".to_string(),
-                    percent_used: None,
-                    detail_bars: Vec::new(),
-                },
-                ProviderKind::Copilot => ProviderCardData {
-                    title: kind.label(),
-                    tone: Tone::Neutral,
-                    badge: "Unavailable".to_string(),
-                    headline: "Support not wired yet".to_string(),
-                    detail: "Copilot stays visible here, but it will not pretend to know usage until a trustworthy source exists.".to_string(),
-                    percent_used: None,
-                    detail_bars: Vec::new(),
-                },
-                _ => ProviderCardData {
-                    title: kind.label(),
-                    tone: Tone::Neutral,
-                    badge: "Unavailable".to_string(),
-                    headline: "Not available".to_string(),
-                    detail: "No support is currently wired for this provider.".to_string(),
-                    percent_used: None,
-                    detail_bars: Vec::new(),
-                },
+            return ProviderCardModel {
+                title,
+                accent,
+                subtitle: None,
+                sections: Vec::new(),
+                headline: Some(match kind {
+                    ProviderKind::Codex => {
+                        if self.refresh.in_flight {
+                            "Checking usage now".to_string()
+                        } else {
+                            "No local snapshot yet".to_string()
+                        }
+                    }
+                    _ => "Support not wired yet".to_string(),
+                }),
+                detail: Some(match kind {
+                    ProviderKind::Codex => {
+                        "The Codex card will fill in as soon as the refresh loop returns data.".to_string()
+                    }
+                    _ => {
+                        "This page stays visible, but Usage Radar will not invent data until a trustworthy source exists.".to_string()
+                    }
+                }),
             };
         };
 
         if snapshot.unavailable {
-            return ProviderCardData {
-                title: kind.label(),
-                tone: Tone::Neutral,
-                badge: if snapshot.stale {
-                    "Unavailable".to_string()
+            return ProviderCardModel {
+                title,
+                accent,
+                subtitle: if snapshot.stale {
+                    Some("Last known snapshot".to_string())
                 } else {
-                    "No value".to_string()
+                    None
                 },
-                headline: "No trustworthy value available".to_string(),
-                detail: first_meaningful_note(snapshot).unwrap_or_else(|| {
+                sections: Vec::new(),
+                headline: Some("No trustworthy value available".to_string()),
+                detail: Some(first_meaningful_note(snapshot).unwrap_or_else(|| {
                     "The provider is expected, but no reliable snapshot is available yet."
                         .to_string()
-                }),
-                percent_used: None,
-                detail_bars: Vec::new(),
+                })),
             };
         }
 
-        if let Some(bar) = snapshot.summary_bar.as_ref() {
-            let tone = tone_for_percent_left(bar.percent_left);
+        let sections = provider_sections(kind, snapshot);
 
-            return ProviderCardData {
-                title: kind.label(),
-                tone: if snapshot.stale { Tone::Warning } else { tone },
-                badge: if snapshot.stale {
-                    "Stale".to_string()
+        if sections.is_empty() {
+            return ProviderCardModel {
+                title,
+                accent,
+                subtitle: if snapshot.stale {
+                    Some("Last known snapshot".to_string())
                 } else {
-                    format!("{:.0}% left", bar.percent_left)
+                    None
                 },
-                headline: format!(
-                    "{:.0}% left · {:.0}% used",
-                    bar.percent_left, bar.percent_used
-                ),
-                detail: if snapshot.stale {
-                    first_meaningful_note(snapshot).unwrap_or_else(|| {
-                        "Showing the last known value until refresh succeeds.".to_string()
-                    })
-                } else {
-                    format_reset_text(bar.reset_at)
-                },
-                percent_used: Some(bar.percent_used),
-                detail_bars: snapshot
-                    .detail_bars
-                    .iter()
-                    .map(|bar| DetailBarData {
-                        label: bar.label.clone(),
-                        detail: if let Some(subtitle) = bar.subtitle.as_ref() {
-                            format!("{:.0}% left · {subtitle}", bar.percent_left)
-                        } else {
-                            format!(
-                                "{:.0}% left · {}",
-                                bar.percent_left,
-                                format_reset_text(bar.reset_at)
-                            )
-                        },
-                        percent_used: bar.percent_used,
-                        tone: tone_for_percent_left(bar.percent_left),
-                    })
-                    .collect(),
+                sections,
+                headline: Some("Snapshot available".to_string()),
+                detail: Some(first_meaningful_note(snapshot).unwrap_or_else(|| {
+                    "The provider responded, but no displayable sections were returned yet."
+                        .to_string()
+                })),
             };
         }
 
-        ProviderCardData {
-            title: kind.label(),
-            tone: if snapshot.stale {
-                Tone::Warning
+        ProviderCardModel {
+            title,
+            accent,
+            subtitle: if snapshot.stale {
+                Some("Last known snapshot".to_string())
             } else {
-                Tone::Neutral
+                None
             },
-            badge: if snapshot.stale {
-                "Stale".to_string()
-            } else {
-                "Partial".to_string()
-            },
-            headline: "Partial snapshot available".to_string(),
-            detail: first_meaningful_note(snapshot).unwrap_or_else(|| {
-                "Some provider data is present, but the summary row is not ready yet.".to_string()
-            }),
-            percent_used: None,
-            detail_bars: Vec::new(),
+            sections,
+            headline: None,
+            detail: None,
         }
     }
 
@@ -685,18 +653,6 @@ impl App {
             .providers
             .iter()
             .find(|snapshot| snapshot.kind == kind)
-    }
-
-    fn refresh_status_text(&self) -> String {
-        if self.refresh.in_flight {
-            "Refreshing…".to_string()
-        } else if self.refresh.last_error.is_some() {
-            "Refresh failed · showing last known value".to_string()
-        } else if let Some(when) = self.refresh.last_finished_at {
-            format!("Updated {}", relative_time_text(when))
-        } else {
-            "Waiting for first refresh".to_string()
-        }
     }
 
     fn notice_text(&self) -> Option<String> {
@@ -719,30 +675,28 @@ impl App {
 }
 
 #[derive(Debug, Clone)]
-struct ProviderCardData {
+struct ProviderCardModel {
     title: &'static str,
-    tone: Tone,
-    badge: String,
-    headline: String,
-    detail: String,
-    percent_used: Option<f32>,
-    detail_bars: Vec<DetailBarData>,
+    accent: Color,
+    subtitle: Option<String>,
+    sections: Vec<ProviderSection>,
+    headline: Option<String>,
+    detail: Option<String>,
 }
 
 #[derive(Debug, Clone)]
-struct DetailBarData {
-    label: String,
-    detail: String,
-    percent_used: f32,
-    tone: Tone,
+struct ProviderSection {
+    title: String,
+    progress: f32,
+    leading: String,
+    trailing: String,
+    accent: Color,
 }
 
 #[derive(Debug, Clone, Copy)]
 enum Tone {
     Neutral,
-    Success,
     Warning,
-    Danger,
 }
 
 fn handle_escape_key(event: Event, _status: event::Status, window: window::Id) -> Option<Message> {
@@ -757,100 +711,108 @@ fn handle_escape_key(event: Event, _status: event::Status, window: window::Id) -
     }
 }
 
-fn provider_card(data: ProviderCardData) -> Element<'static, Message> {
-    let badge = status_badge_owned(data.badge, data.tone);
+fn page_tab_button(
+    label: &'static str,
+    page: Option<ProviderKind>,
+    current_page: Option<ProviderKind>,
+    accent: Color,
+) -> Element<'static, Message> {
+    let active = current_page == page;
+    let indicator = container(text(""))
+        .width(Length::Fill)
+        .height(3)
+        .style(move |_theme| tab_indicator_style(active, accent));
 
-    let mut body = column![
-        row![text(data.title).size(17).color(color_text()), badge]
-            .spacing(8)
-            .align_y(Alignment::Center)
-            .wrap(),
-        text(data.headline).size(14).color(color_text()),
-        text(data.detail).size(12).color(color_muted()),
+    let content = column![
+        text(label)
+            .size(13)
+            .color(if active { color_text() } else { color_muted() }),
+        indicator,
     ]
-    .spacing(7);
+    .spacing(8)
+    .align_x(alignment::Horizontal::Center)
+    .width(Length::Fill);
 
-    if let Some(percent_used) = data.percent_used {
-        body = body.push(
-            progress_bar(0.0..=100.0, percent_used)
-                .height(5)
-                .style(move |_theme| progress_style(data.tone)),
-        );
+    container(
+        button(content)
+            .padding([10, 8])
+            .width(Length::Fill)
+            .style(move |_theme, status| page_tab_style(active, accent, status))
+            .on_press(Message::SelectPage(page)),
+    )
+    .width(Length::FillPortion(1))
+    .into()
+}
+
+fn provider_card(model: ProviderCardModel) -> Element<'static, Message> {
+    let mut body = column![text(model.title).size(18).color(color_text())].spacing(12);
+
+    if let Some(subtitle) = model.subtitle {
+        body = body.push(text(subtitle).size(12).color(color_muted()));
     }
 
-    for detail in data.detail_bars {
-        body = body.push(detail_bar(detail));
+    if let Some(headline) = model.headline {
+        body = body.push(text(headline).size(14).color(color_text()));
+    }
+
+    if let Some(detail) = model.detail {
+        body = body.push(text(detail).size(12).color(color_muted()));
+    }
+
+    for section in model.sections {
+        body = body.push(provider_section(section));
     }
 
     container(body)
         .width(Length::Fill)
-        .padding(12)
-        .style(move |_theme| provider_card_style(data.tone))
+        .padding(18)
+        .style(move |_theme| provider_card_style(model.accent))
         .into()
 }
 
-fn detail_bar(data: DetailBarData) -> Element<'static, Message> {
+fn provider_section(section: ProviderSection) -> Element<'static, Message> {
     column![
-        text(data.label).size(12).color(color_text()),
-        text(data.detail).size(11).color(color_muted()),
-        progress_bar(0.0..=100.0, data.percent_used)
-            .height(4)
-            .style(move |_theme| progress_style(data.tone)),
+        text(section.title).size(15).color(color_text()),
+        progress_bar(0.0..=100.0, section.progress)
+            .height(8)
+            .style(move |_theme| progress_style(section.accent)),
+        row![
+            text(section.leading).size(12).color(color_text()),
+            horizontal_space(),
+            text(section.trailing).size(12).color(color_muted()),
+        ]
+        .align_y(Alignment::Center),
     ]
-    .spacing(4)
+    .spacing(8)
     .into()
 }
 
-fn provider_tab_button(
-    kind: ProviderKind,
-    active: bool,
-    tone: Tone,
-) -> iced::widget::Button<'static, Message> {
-    button(text(compact_provider_label(kind)).size(12))
-        .padding([6, 10])
-        .style(move |_theme, status| provider_tab_style(active, tone, status))
-        .on_press(Message::SelectProvider(kind))
-}
-
-fn icon_button(
+fn bottom_menu_button(
     label: &'static str,
     message: Message,
-    tone: Tone,
 ) -> iced::widget::Button<'static, Message> {
-    button(text(label).size(13).color(color_text()))
-        .padding([5, 8])
-        .style(move |_theme, status| icon_button_style(tone, status))
+    let content = container(text(label).size(14).color(color_text()))
+        .width(Length::Fill)
+        .align_x(alignment::Horizontal::Left);
+
+    button(content)
+        .width(Length::Fill)
+        .padding([8, 10])
+        .style(bottom_menu_button_style)
         .on_press(message)
-}
-
-fn status_badge_owned(label: String, tone: Tone) -> Element<'static, Message> {
-    let colors = tone_colors(tone);
-
-    container(text(label).size(10).color(colors.text))
-        .padding([3, 7])
-        .style(move |_theme| iced::widget::container::Style {
-            background: Some(colors.background.into()),
-            border: Border {
-                width: 1.0,
-                radius: 999.0.into(),
-                color: colors.border,
-            },
-            ..Default::default()
-        })
-        .into()
 }
 
 fn notice_view(message: String, tone: Tone) -> Element<'static, Message> {
     let colors = tone_colors(tone);
 
-    container(text(message).size(11).color(colors.text))
+    container(text(message).size(12).color(colors.text))
         .width(Length::Fill)
-        .padding(10)
+        .padding(12)
         .style(move |_theme| iced::widget::container::Style {
-            background: Some(surface_raised().into()),
+            background: Some(surface_card().into()),
             border: Border {
                 width: 1.0,
-                radius: 10.0.into(),
+                radius: 12.0.into(),
                 color: colors.border,
             },
             ..Default::default()
@@ -858,12 +820,48 @@ fn notice_view(message: String, tone: Tone) -> Element<'static, Message> {
         .into()
 }
 
-fn compact_provider_label(kind: ProviderKind) -> &'static str {
+fn provider_sections(kind: ProviderKind, snapshot: &ProviderSnapshot) -> Vec<ProviderSection> {
+    if !snapshot.detail_bars.is_empty() {
+        snapshot
+            .detail_bars
+            .iter()
+            .map(|bar| ProviderSection {
+                title: section_label(kind, &bar.label),
+                progress: bar.percent_left.clamp(0.0, 100.0),
+                leading: format!("{:.0}% left", bar.percent_left),
+                trailing: format_reset_text(bar.reset_at),
+                accent: provider_accent(kind),
+            })
+            .collect()
+    } else if let Some(bar) = snapshot.summary_bar.as_ref() {
+        vec![ProviderSection {
+            title: section_label(kind, &bar.label),
+            progress: bar.percent_left.clamp(0.0, 100.0),
+            leading: format!("{:.0}% left", bar.percent_left),
+            trailing: format_reset_text(bar.reset_at),
+            accent: provider_accent(kind),
+        }]
+    } else {
+        Vec::new()
+    }
+}
+
+fn provider_ui_label(kind: ProviderKind) -> &'static str {
     match kind {
         ProviderKind::Codex => "Codex",
         ProviderKind::Copilot => "Copilot",
         ProviderKind::ClaudeCode => "Claude",
         ProviderKind::GeminiCli => "Gemini",
+    }
+}
+
+fn section_label(kind: ProviderKind, label: &str) -> String {
+    match (kind, label) {
+        (ProviderKind::Codex, "5h window") => "5h usage limit".to_string(),
+        (ProviderKind::Codex, "Weekly window") => "Weekly usage".to_string(),
+        (_, "5h window") => "Current usage".to_string(),
+        (_, "Weekly window") => "Weekly usage".to_string(),
+        _ => label.to_string(),
     }
 }
 
@@ -894,139 +892,72 @@ fn format_reset_text(reset_at: Option<SystemTime>) -> String {
     }
 }
 
-fn relative_time_text(when: SystemTime) -> String {
-    match SystemTime::now().duration_since(when) {
-        Ok(duration) if duration.as_secs() < 30 => "just now".to_string(),
-        Ok(duration) if duration.as_secs() < 3_600 => {
-            format!("{}m ago", duration.as_secs() / 60)
-        }
-        Ok(duration) if duration.as_secs() < 86_400 => {
-            format!("{}h ago", duration.as_secs() / 3_600)
-        }
-        Ok(duration) => format!("{}d ago", duration.as_secs() / 86_400),
-        Err(_) => "just now".to_string(),
-    }
-}
-
-fn tone_for_percent_left(percent_left: f32) -> Tone {
-    if percent_left <= 5.0 {
-        Tone::Danger
-    } else if percent_left <= 15.0 {
-        Tone::Warning
-    } else {
-        Tone::Success
-    }
-}
-
 #[derive(Clone, Copy)]
 struct ToneColors {
-    background: Color,
     text: Color,
     border: Color,
-    bar: Color,
 }
 
 fn tone_colors(tone: Tone) -> ToneColors {
     match tone {
         Tone::Neutral => ToneColors {
-            background: color_rgb(29, 31, 35),
-            text: color_rgb(182, 188, 196),
-            border: color_rgb(62, 67, 74),
-            bar: color_rgb(128, 135, 144),
-        },
-        Tone::Success => ToneColors {
-            background: color_rgb(29, 43, 36),
-            text: color_rgb(156, 214, 182),
-            border: color_rgb(68, 104, 86),
-            bar: color_rgb(102, 190, 141),
+            text: color_muted(),
+            border: color_border(),
         },
         Tone::Warning => ToneColors {
-            background: color_rgb(47, 40, 27),
-            text: color_rgb(226, 195, 124),
-            border: color_rgb(103, 84, 53),
-            bar: color_rgb(219, 172, 79),
-        },
-        Tone::Danger => ToneColors {
-            background: color_rgb(52, 30, 33),
-            text: color_rgb(235, 168, 176),
-            border: color_rgb(120, 68, 75),
-            bar: color_rgb(223, 96, 117),
+            text: color_warning_text(),
+            border: color_warning_border(),
         },
     }
 }
 
 fn panel_shell_style(_theme: &Theme) -> iced::widget::container::Style {
     iced::widget::container::Style {
-        background: Some(color_rgb(18, 20, 24).into()),
+        background: Some(surface_shell().into()),
         border: Border {
             width: 1.0,
-            radius: 14.0.into(),
-            color: color_rgb(60, 64, 70),
+            radius: 18.0.into(),
+            color: color_border(),
         },
         shadow: Shadow {
             color: Color::from_rgba8(0, 0, 0, 0.18),
-            offset: iced::Vector::new(0.0, 4.0),
-            blur_radius: 14.0,
+            offset: iced::Vector::new(0.0, 6.0),
+            blur_radius: 20.0,
         },
         ..Default::default()
     }
 }
 
-fn provider_card_style(tone: Tone) -> iced::widget::container::Style {
-    let colors = tone_colors(tone);
-
+fn provider_card_style(_accent: Color) -> iced::widget::container::Style {
     iced::widget::container::Style {
-        background: Some(surface_raised().into()),
+        background: Some(surface_card().into()),
         border: Border {
             width: 1.0,
-            radius: 12.0.into(),
-            color: colors.border,
+            radius: 18.0.into(),
+            color: color_border(),
         },
         ..Default::default()
     }
 }
 
-fn bottom_bar_style(_theme: &Theme) -> iced::widget::container::Style {
-    iced::widget::container::Style {
-        background: Some(surface_primary().into()),
-        border: Border {
-            width: 1.0,
-            radius: 12.0.into(),
-            color: color_rgb(60, 64, 70),
-        },
-        ..Default::default()
-    }
-}
-
-fn provider_tab_style(active: bool, tone: Tone, status: button::Status) -> button::Style {
-    let colors = tone_colors(if active { tone } else { Tone::Neutral });
-    let mut background = if active {
-        color_rgb(30, 35, 39)
-    } else {
-        color_rgb(24, 26, 30)
-    };
-    let mut border = if active {
-        colors.border
-    } else {
-        color_rgb(52, 56, 62)
-    };
+fn page_tab_style(active: bool, accent: Color, status: button::Status) -> button::Style {
+    let mut background = if active { accent } else { Color::TRANSPARENT };
     let mut text_color = if active { color_text() } else { color_muted() };
 
     match status {
         button::Status::Hovered => {
-            background = if active {
-                color_rgb(34, 38, 43)
-            } else {
-                color_rgb(30, 33, 38)
-            };
-            text_color = color_text();
+            if !active {
+                background = Color::from_rgba8(255, 255, 255, 0.04);
+                text_color = color_text();
+            }
         }
         button::Status::Pressed => {
-            background = color_rgb(22, 24, 28);
-            border = colors.text;
+            if !active {
+                background = Color::from_rgba8(255, 255, 255, 0.07);
+            }
         }
         button::Status::Disabled => {
-            text_color = color_rgb(98, 103, 111);
+            text_color = Color::from_rgb8(120, 126, 134);
         }
         button::Status::Active => {}
     }
@@ -1035,61 +966,60 @@ fn provider_tab_style(active: bool, tone: Tone, status: button::Status) -> butto
         background: Some(background.into()),
         text_color,
         border: Border {
-            width: 1.0,
-            radius: 999.0.into(),
-            color: border,
+            width: 0.0,
+            radius: 12.0.into(),
+            color: Color::TRANSPARENT,
         },
         shadow: Shadow::default(),
     }
 }
 
-fn icon_button_style(tone: Tone, status: button::Status) -> button::Style {
-    let colors = tone_colors(tone);
-    let mut background = color_rgb(24, 26, 30);
-    let mut border = color_rgb(50, 54, 60);
-
-    match status {
-        button::Status::Hovered => {
-            background = color_rgb(31, 34, 39);
-            border = colors.border;
-        }
-        button::Status::Pressed => {
-            background = color_rgb(20, 22, 26);
-            border = colors.text;
-        }
-        button::Status::Disabled => {
-            return button::Style {
-                background: Some(color_rgb(22, 24, 28).into()),
-                text_color: color_rgb(98, 103, 111),
-                border: Border {
-                    width: 1.0,
-                    radius: 8.0.into(),
-                    color: color_rgb(45, 48, 53),
-                },
-                shadow: Shadow::default(),
-            };
-        }
-        button::Status::Active => {}
+fn tab_indicator_style(active: bool, accent: Color) -> iced::widget::container::Style {
+    iced::widget::container::Style {
+        background: Some(
+            if active {
+                accent
+            } else {
+                Color::from_rgba8(255, 255, 255, 0.12)
+            }
+            .into(),
+        ),
+        border: Border {
+            width: 0.0,
+            radius: 999.0.into(),
+            color: Color::TRANSPARENT,
+        },
+        ..Default::default()
     }
+}
+
+fn bottom_menu_button_style(_theme: &Theme, status: button::Status) -> button::Style {
+    let background = match status {
+        button::Status::Hovered => Color::from_rgba8(255, 255, 255, 0.04),
+        button::Status::Pressed => Color::from_rgba8(255, 255, 255, 0.07),
+        button::Status::Disabled => Color::TRANSPARENT,
+        button::Status::Active => Color::TRANSPARENT,
+    };
 
     button::Style {
         background: Some(background.into()),
-        text_color: color_text(),
+        text_color: match status {
+            button::Status::Disabled => Color::from_rgb8(120, 126, 134),
+            _ => color_text(),
+        },
         border: Border {
-            width: 1.0,
+            width: 0.0,
             radius: 8.0.into(),
-            color: border,
+            color: Color::TRANSPARENT,
         },
         shadow: Shadow::default(),
     }
 }
 
-fn progress_style(tone: Tone) -> progress_bar::Style {
-    let colors = tone_colors(tone);
-
+fn progress_style(accent: Color) -> progress_bar::Style {
     progress_bar::Style {
-        background: color_rgb(31, 33, 38).into(),
-        bar: colors.bar.into(),
+        background: color_progress_track().into(),
+        bar: accent.into(),
         border: Border {
             width: 0.0,
             radius: 999.0.into(),
@@ -1176,20 +1106,64 @@ fn scroll_rail(rail_alpha: f32, scroller_alpha: f32) -> iced::widget::scrollable
     }
 }
 
+fn divider_line() -> Element<'static, Message> {
+    container(text(""))
+        .width(Length::Fill)
+        .height(1)
+        .style(|_theme| iced::widget::container::Style {
+            background: Some(color_divider().into()),
+            ..Default::default()
+        })
+        .into()
+}
+
+fn accent_home() -> Color {
+    color_rgb(60, 112, 255)
+}
+
+fn provider_accent(kind: ProviderKind) -> Color {
+    match kind {
+        ProviderKind::Codex => color_rgb(60, 112, 255),
+        ProviderKind::Copilot => color_rgb(43, 168, 78),
+        ProviderKind::ClaudeCode => color_rgb(164, 122, 255),
+        ProviderKind::GeminiCli => color_rgb(214, 162, 59),
+    }
+}
+
 fn color_text() -> Color {
-    color_rgb(236, 239, 242)
+    color_rgb(242, 244, 247)
 }
 
 fn color_muted() -> Color {
-    color_rgb(159, 166, 175)
+    color_rgb(177, 183, 191)
 }
 
-fn surface_primary() -> Color {
-    color_rgb(22, 24, 29)
+fn color_border() -> Color {
+    color_rgb(76, 79, 85)
 }
 
-fn surface_raised() -> Color {
-    color_rgb(27, 30, 35)
+fn color_divider() -> Color {
+    color_rgb(67, 70, 75)
+}
+
+fn color_progress_track() -> Color {
+    color_rgb(69, 71, 76)
+}
+
+fn color_warning_text() -> Color {
+    color_rgb(236, 198, 119)
+}
+
+fn color_warning_border() -> Color {
+    color_rgb(117, 93, 56)
+}
+
+fn surface_shell() -> Color {
+    color_rgb(40, 40, 42)
+}
+
+fn surface_card() -> Color {
+    color_rgb(53, 53, 55)
 }
 
 fn color_rgb(red: u8, green: u8, blue: u8) -> Color {
