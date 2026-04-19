@@ -148,18 +148,12 @@ impl App {
         .spacing(10)
         .height(Length::Fill);
 
-        container(
-            container(layout)
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .padding(12)
-                .style(panel_shell_style),
-        )
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .padding(2)
-        .style(window_backdrop_style)
-        .into()
+        container(layout)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .padding(12)
+            .style(panel_shell_style)
+            .into()
     }
 
     fn handle_app_started(&mut self) -> Task<Message> {
@@ -585,8 +579,8 @@ impl App {
     }
 
     fn provider_page_view(&self, kind: ProviderKind) -> Element<'_, Message> {
-        column![provider_card(self.provider_card_model(kind))]
-            .spacing(14)
+        column![provider_panel(self.provider_card_model(kind), false)]
+            .spacing(10)
             .into()
     }
 
@@ -864,6 +858,10 @@ fn tab_icon_handle(icon: TabIcon) -> svg::Handle {
 }
 
 fn provider_card(model: ProviderCardModel) -> Element<'static, Message> {
+    provider_panel(model, true)
+}
+
+fn provider_panel(model: ProviderCardModel, framed: bool) -> Element<'static, Message> {
     let mut body = column![text(model.title).size(17).color(color_text())].spacing(8);
 
     if let Some(subtitle) = model.subtitle {
@@ -882,11 +880,15 @@ fn provider_card(model: ProviderCardModel) -> Element<'static, Message> {
         body = body.push(provider_section(section));
     }
 
-    container(body)
-        .width(Length::Fill)
-        .padding(14)
-        .style(move |_theme| provider_card_style(model.accent))
-        .into()
+    if framed {
+        container(body)
+            .width(Length::Fill)
+            .padding(14)
+            .style(move |_theme| provider_card_style(model.accent))
+            .into()
+    } else {
+        container(body).width(Length::Fill).padding([2, 4]).into()
+    }
 }
 
 fn provider_section(section: ProviderSection) -> Element<'static, Message> {
@@ -1030,19 +1032,12 @@ fn tone_colors(tone: Tone) -> ToneColors {
     }
 }
 
-fn window_backdrop_style(_theme: &Theme) -> iced::widget::container::Style {
-    iced::widget::container::Style {
-        background: Some(surface_window().into()),
-        ..Default::default()
-    }
-}
-
 fn panel_shell_style(_theme: &Theme) -> iced::widget::container::Style {
     iced::widget::container::Style {
         background: Some(surface_shell().into()),
         border: Border {
             width: 1.0,
-            radius: 16.0.into(),
+            radius: 0.0.into(),
             color: color_border(),
         },
         shadow: Shadow::default(),
@@ -1263,10 +1258,6 @@ fn color_warning_text() -> Color {
 
 fn color_warning_border() -> Color {
     color_rgb(117, 93, 56)
-}
-
-fn surface_window() -> Color {
-    color_rgb(46, 46, 48)
 }
 
 fn surface_shell() -> Color {
