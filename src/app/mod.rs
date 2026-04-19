@@ -12,7 +12,7 @@ use iced::widget::{
 };
 use iced::{
     alignment, event, keyboard, window, Alignment, Border, Color, Element, Event, Font, Length,
-    Shadow, Subscription, Task, Theme,
+    Padding, Shadow, Subscription, Task, Theme,
 };
 use lucide_icons::Icon as LucideIcon;
 use tray_icon::menu::MenuEvent;
@@ -152,7 +152,7 @@ impl App {
         container(layout)
             .width(Length::Fill)
             .height(Length::Fill)
-            .padding(12)
+            .padding(Padding::new(12.0).bottom(6.0))
             .style(panel_shell_style)
             .into()
     }
@@ -651,7 +651,7 @@ impl App {
                 toolbar_icon_button(LucideIcon::X, Message::QuitRequested),
             ]
             .align_y(Alignment::Center)
-            .padding([10, 0]),
+            .padding(Padding::ZERO.top(6.0).bottom(1.0)),
         ]
         .spacing(0)
         .into()
@@ -928,7 +928,7 @@ fn toolbar_icon_button(
     message: Message,
 ) -> iced::widget::Button<'static, Message> {
     button(lucide_icon(icon))
-        .padding(9)
+        .padding(6)
         .style(toolbar_icon_button_style)
         .on_press(message)
 }
@@ -1114,36 +1114,20 @@ fn page_tab_style(active: bool, status: button::Status) -> button::Style {
 }
 
 fn toolbar_icon_button_style(_theme: &Theme, status: button::Status) -> button::Style {
-    let (background, border_color, text_color) = match status {
-        button::Status::Hovered => (
-            Color::from_rgba8(255, 255, 255, 0.10),
-            Color::from_rgba8(255, 255, 255, 0.18),
-            color_text(),
-        ),
-        button::Status::Pressed => (
-            Color::from_rgba8(255, 255, 255, 0.14),
-            Color::from_rgba8(255, 255, 255, 0.24),
-            color_text(),
-        ),
-        button::Status::Disabled => (
-            Color::from_rgba8(255, 255, 255, 0.04),
-            Color::from_rgba8(255, 255, 255, 0.08),
-            Color::from_rgb8(120, 126, 134),
-        ),
-        button::Status::Active => (
-            Color::from_rgba8(255, 255, 255, 0.06),
-            Color::from_rgba8(255, 255, 255, 0.12),
-            color_text(),
-        ),
+    let (background, text_color) = match status {
+        button::Status::Hovered => (Color::from_rgba8(255, 255, 255, 0.06), color_text()),
+        button::Status::Pressed => (Color::from_rgba8(255, 255, 255, 0.10), color_text()),
+        button::Status::Disabled => (Color::TRANSPARENT, Color::from_rgb8(120, 126, 134)),
+        button::Status::Active => (Color::TRANSPARENT, color_text()),
     };
 
     button::Style {
         background: Some(background.into()),
         text_color,
         border: Border {
-            width: 1.0,
+            width: 0.0,
             radius: 999.0.into(),
-            color: border_color,
+            color: Color::TRANSPARENT,
         },
         shadow: Shadow::default(),
     }
