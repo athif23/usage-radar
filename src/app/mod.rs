@@ -640,7 +640,7 @@ impl App {
             ),
             toolbar_icon_button(LucideIcon::CircleHelp, Message::OpenAbout),
         ]
-        .spacing(10)
+        .spacing(8)
         .align_y(Alignment::Center);
 
         column![
@@ -651,7 +651,7 @@ impl App {
                 toolbar_icon_button(LucideIcon::X, Message::QuitRequested),
             ]
             .align_y(Alignment::Center)
-            .padding(Padding::ZERO.top(6.0).bottom(1.0)),
+            .padding(Padding::ZERO.top(4.0).bottom(0.0)),
         ]
         .spacing(0)
         .into()
@@ -927,16 +927,22 @@ fn toolbar_icon_button(
     icon: LucideIcon,
     message: Message,
 ) -> iced::widget::Button<'static, Message> {
-    button(lucide_icon(icon))
-        .padding(6)
-        .style(toolbar_icon_button_style)
-        .on_press(message)
+    button(
+        container(lucide_icon(icon))
+            .width(Length::Fixed(30.0))
+            .height(Length::Fixed(30.0))
+            .align_x(alignment::Horizontal::Center)
+            .align_y(alignment::Vertical::Center),
+    )
+    .padding(0)
+    .style(toolbar_icon_button_style)
+    .on_press(message)
 }
 
 fn lucide_icon(icon: LucideIcon) -> Element<'static, Message> {
     text(char::from(icon).to_string())
         .font(Font::with_name("lucide"))
-        .size(18)
+        .size(17)
         .color(color_text())
         .into()
 }
