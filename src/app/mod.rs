@@ -6,6 +6,7 @@ use std::fs;
 use std::process::Command;
 use std::time::{Duration, SystemTime};
 
+use iced::widget::svg;
 use iced::widget::{
     button, column, container, horizontal_space, progress_bar, row, scrollable, text,
 };
@@ -73,6 +74,10 @@ impl App {
                 Task::none()
             }
             Message::SelectPage(selected_provider) => self.handle_select_page(selected_provider),
+            Message::OpenAbout => {
+                self.panel.show_about = true;
+                Task::none()
+            }
             Message::OpenConfigFolder => self.open_config_folder(),
             Message::RefreshRequested(reason) => self.request_refresh(reason),
             Message::RefreshFinished(result) => self.handle_refresh_finished(result),
@@ -277,6 +282,7 @@ impl App {
     }
 
     fn handle_select_page(&mut self, selected_provider: Option<ProviderKind>) -> Task<Message> {
+        self.panel.show_about = false;
         self.panel.selected_provider = selected_provider;
         self.config.selected_provider = selected_provider;
         self.persist_config();
@@ -499,43 +505,67 @@ impl App {
     }
 
     fn top_tabs_view(&self) -> Element<'_, Message> {
+        let home_active = !self.panel.show_about && self.panel.selected_provider.is_none();
+        let codex_active =
+            !self.panel.show_about && self.panel.selected_provider == Some(ProviderKind::Codex);
+        let copilot_active =
+            !self.panel.show_about && self.panel.selected_provider == Some(ProviderKind::Copilot);
+        let gemini_active =
+            !self.panel.show_about && self.panel.selected_provider == Some(ProviderKind::GeminiCli);
+        let claude_active = !self.panel.show_about
+            && self.panel.selected_provider == Some(ProviderKind::ClaudeCode);
+
         let tabs = row![
-            page_tab_button("Home", None, self.panel.selected_provider, accent_home()),
+            page_tab_button(
+                "Home",
+                TabIcon::Home,
+                home_active,
+                Message::SelectPage(None),
+                accent_home(),
+            ),
             page_tab_button(
                 "Codex",
-                Some(ProviderKind::Codex),
-                self.panel.selected_provider,
+                TabIcon::Codex,
+                codex_active,
+                Message::SelectPage(Some(ProviderKind::Codex)),
                 provider_accent(ProviderKind::Codex),
             ),
             page_tab_button(
                 "Copilot",
-                Some(ProviderKind::Copilot),
-                self.panel.selected_provider,
+                TabIcon::Copilot,
+                copilot_active,
+                Message::SelectPage(Some(ProviderKind::Copilot)),
                 provider_accent(ProviderKind::Copilot),
             ),
             page_tab_button(
                 "Gemini",
-                Some(ProviderKind::GeminiCli),
-                self.panel.selected_provider,
+                TabIcon::Gemini,
+                gemini_active,
+                Message::SelectPage(Some(ProviderKind::GeminiCli)),
                 provider_accent(ProviderKind::GeminiCli),
             ),
             page_tab_button(
                 "Claude",
-                Some(ProviderKind::ClaudeCode),
-                self.panel.selected_provider,
+                TabIcon::Claude,
+                claude_active,
+                Message::SelectPage(Some(ProviderKind::ClaudeCode)),
                 provider_accent(ProviderKind::ClaudeCode),
             ),
         ]
         .spacing(8)
-        .align_y(Alignment::Center);
+        .align_y(Alignment::Start);
 
         column![tabs, divider_line()].spacing(10).into()
     }
 
     fn page_content_view(&self) -> Element<'_, Message> {
-        match self.panel.selected_provider {
-            None => self.home_page_view(),
-            Some(kind) => self.provider_page_view(kind),
+        if self.panel.show_about {
+            self.about_page_view()
+        } else {
+            match self.panel.selected_provider {
+                None => self.home_page_view(),
+                Some(kind) => self.provider_page_view(kind),
+            }
         }
     }
 
@@ -554,14 +584,61 @@ impl App {
             .into()
     }
 
+    fn about_page_view(&self) -> Element<'_, Message> {
+        let version = env!("CARGO_PKG_VERSION");
+        let config_path = self
+            .startup
+            .config_path
+            .clone()
+            .or_else(|| paths::config_file_path().ok())
+            .map(|path| path.display().to_string())
+            .unwrap_or_else(|| "Unavailable".to_string());
+
+        let cache_path = self
+            .startup
+            .cache_path
+            .clone()
+            .or_else(|| paths::cache_file_path().ok())
+            .map(|path| path.display().to_string())
+            .unwrap_or_else(|| "Unavailable".to_string());
+
+        let card = column![
+            text("Usage Radar").size(22).color(color_text()),
+            text("Tray-first usage monitor for local AI tools.")
+                .size(14)
+                .color(color_text()),
+            text(
+                "Codex is wired first. Copilot, Claude, and Gemini stay honest until trustworthy local sources are implemented."
+            )
+            .size(13)
+            .color(color_muted()),
+            divider_line(),
+            text(format!("Version {version}")).size(13).color(color_text()),
+            text(format!("Config: {config_path}"))
+                .size(12)
+                .color(color_muted()),
+            text(format!("Cache: {cache_path}"))
+                .size(12)
+                .color(color_muted()),
+        ]
+        .spacing(10);
+
+        container(card)
+            .width(Length::Fill)
+            .padding(18)
+            .style(|_theme| provider_card_style(color_border()))
+            .into()
+    }
+
     fn bottom_menu_view(&self) -> Element<'_, Message> {
         column![
             divider_line(),
-            bottom_menu_button("Refresh", Message::RefreshRequested(RefreshReason::Manual),),
+            bottom_menu_button("Refresh", Message::RefreshRequested(RefreshReason::Manual)),
             bottom_menu_button("Settings", Message::OpenConfigFolder),
+            bottom_menu_button("About Usage Radar", Message::OpenAbout),
             bottom_menu_button("Quit", Message::QuitRequested),
         ]
-        .spacing(4)
+        .spacing(6)
         .into()
     }
 
@@ -570,29 +647,33 @@ impl App {
         let accent = provider_accent(kind);
 
         let Some(snapshot) = self.snapshot(kind) else {
-            return ProviderCardModel {
-                title,
-                accent,
-                subtitle: None,
-                sections: Vec::new(),
-                headline: Some(match kind {
-                    ProviderKind::Codex => {
-                        if self.refresh.in_flight {
-                            "Checking usage now".to_string()
-                        } else {
-                            "No local snapshot yet".to_string()
-                        }
-                    }
-                    _ => "Support not wired yet".to_string(),
-                }),
-                detail: Some(match kind {
-                    ProviderKind::Codex => {
-                        "The Codex card will fill in as soon as the refresh loop returns data.".to_string()
-                    }
-                    _ => {
-                        "This page stays visible, but Usage Radar will not invent data until a trustworthy source exists.".to_string()
-                    }
-                }),
+            return match kind {
+                ProviderKind::Codex => ProviderCardModel {
+                    title,
+                    accent,
+                    subtitle: None,
+                    sections: Vec::new(),
+                    headline: Some(if self.refresh.in_flight {
+                        "Checking usage now".to_string()
+                    } else {
+                        "No local snapshot yet".to_string()
+                    }),
+                    detail: Some(
+                        "The Codex card will fill in as soon as the refresh loop returns data."
+                            .to_string(),
+                    ),
+                },
+                _ => ProviderCardModel {
+                    title,
+                    accent,
+                    subtitle: None,
+                    sections: Vec::new(),
+                    headline: Some("Support not wired yet".to_string()),
+                    detail: Some(
+                        "This page stays visible, but Usage Radar will not invent data until a trustworthy source exists."
+                            .to_string(),
+                    ),
+                },
             };
         };
 
@@ -699,6 +780,15 @@ enum Tone {
     Warning,
 }
 
+#[derive(Debug, Clone, Copy)]
+enum TabIcon {
+    Home,
+    Codex,
+    Copilot,
+    Gemini,
+    Claude,
+}
+
 fn handle_escape_key(event: Event, _status: event::Status, window: window::Id) -> Option<Message> {
     match event {
         Event::Keyboard(keyboard::Event::KeyPressed { key, .. }) => match key {
@@ -713,17 +803,21 @@ fn handle_escape_key(event: Event, _status: event::Status, window: window::Id) -
 
 fn page_tab_button(
     label: &'static str,
-    page: Option<ProviderKind>,
-    current_page: Option<ProviderKind>,
+    icon: TabIcon,
+    active: bool,
+    message: Message,
     accent: Color,
 ) -> Element<'static, Message> {
-    let active = current_page == page;
+    let icon_color = if active { color_text() } else { color_muted() };
     let indicator = container(text(""))
         .width(Length::Fill)
-        .height(3)
+        .height(4)
         .style(move |_theme| tab_indicator_style(active, accent));
 
     let content = column![
+        container(tab_icon(icon, icon_color))
+            .width(Length::Fill)
+            .align_x(alignment::Horizontal::Center),
         text(label)
             .size(13)
             .color(if active { color_text() } else { color_muted() }),
@@ -735,13 +829,37 @@ fn page_tab_button(
 
     container(
         button(content)
-            .padding([10, 8])
             .width(Length::Fill)
-            .style(move |_theme, status| page_tab_style(active, accent, status))
-            .on_press(Message::SelectPage(page)),
+            .padding([12, 8])
+            .style(move |_theme, status| page_tab_style(active, status))
+            .on_press(message),
     )
     .width(Length::FillPortion(1))
     .into()
+}
+
+fn tab_icon(icon: TabIcon, color: Color) -> Element<'static, Message> {
+    svg::Svg::new(tab_icon_handle(icon))
+        .width(Length::Fixed(18.0))
+        .height(Length::Fixed(18.0))
+        .style(move |_theme, _status| svg::Style { color: Some(color) })
+        .into()
+}
+
+fn tab_icon_handle(icon: TabIcon) -> svg::Handle {
+    match icon {
+        TabIcon::Home => svg::Handle::from_memory(include_bytes!("../../assets/gauge.svg")),
+        TabIcon::Codex => {
+            svg::Handle::from_memory(include_bytes!("../../assets/OpenAI-white-monoblossom.svg"))
+        }
+        TabIcon::Copilot => {
+            svg::Handle::from_memory(include_bytes!("../../assets/githubcopilot.svg"))
+        }
+        TabIcon::Gemini => {
+            svg::Handle::from_memory(include_bytes!("../../assets/googlegemini.svg"))
+        }
+        TabIcon::Claude => svg::Handle::from_memory(include_bytes!("../../assets/claude.svg")),
+    }
 }
 
 fn provider_card(model: ProviderCardModel) -> Element<'static, Message> {
@@ -791,13 +909,13 @@ fn bottom_menu_button(
     label: &'static str,
     message: Message,
 ) -> iced::widget::Button<'static, Message> {
-    let content = container(text(label).size(14).color(color_text()))
+    let content = container(text(label).size(16).color(color_text()))
         .width(Length::Fill)
         .align_x(alignment::Horizontal::Left);
 
     button(content)
         .width(Length::Fill)
-        .padding([8, 10])
+        .padding([10, 12])
         .style(bottom_menu_button_style)
         .on_press(message)
 }
@@ -920,9 +1038,9 @@ fn panel_shell_style(_theme: &Theme) -> iced::widget::container::Style {
             color: color_border(),
         },
         shadow: Shadow {
-            color: Color::from_rgba8(0, 0, 0, 0.18),
-            offset: iced::Vector::new(0.0, 6.0),
-            blur_radius: 20.0,
+            color: Color::from_rgba8(0, 0, 0, 0.14),
+            offset: iced::Vector::new(0.0, 3.0),
+            blur_radius: 12.0,
         },
         ..Default::default()
     }
@@ -940,8 +1058,12 @@ fn provider_card_style(_accent: Color) -> iced::widget::container::Style {
     }
 }
 
-fn page_tab_style(active: bool, accent: Color, status: button::Status) -> button::Style {
-    let mut background = if active { accent } else { Color::TRANSPARENT };
+fn page_tab_style(active: bool, status: button::Status) -> button::Style {
+    let mut background = if active {
+        accent_home()
+    } else {
+        Color::TRANSPARENT
+    };
     let mut text_color = if active { color_text() } else { color_muted() };
 
     match status {
@@ -967,7 +1089,7 @@ fn page_tab_style(active: bool, accent: Color, status: button::Status) -> button
         text_color,
         border: Border {
             width: 0.0,
-            radius: 12.0.into(),
+            radius: 14.0.into(),
             color: Color::TRANSPARENT,
         },
         shadow: Shadow::default(),
@@ -980,7 +1102,7 @@ fn tab_indicator_style(active: bool, accent: Color) -> iced::widget::container::
             if active {
                 accent
             } else {
-                Color::from_rgba8(255, 255, 255, 0.12)
+                Color::from_rgba8(255, 255, 255, 0.16)
             }
             .into(),
         ),
@@ -1009,7 +1131,7 @@ fn bottom_menu_button_style(_theme: &Theme, status: button::Status) -> button::S
         },
         border: Border {
             width: 0.0,
-            radius: 8.0.into(),
+            radius: 10.0.into(),
             color: Color::TRANSPARENT,
         },
         shadow: Shadow::default(),
@@ -1118,15 +1240,15 @@ fn divider_line() -> Element<'static, Message> {
 }
 
 fn accent_home() -> Color {
-    color_rgb(60, 112, 255)
+    color_rgb(67, 113, 239)
 }
 
 fn provider_accent(kind: ProviderKind) -> Color {
     match kind {
-        ProviderKind::Codex => color_rgb(60, 112, 255),
-        ProviderKind::Copilot => color_rgb(43, 168, 78),
-        ProviderKind::ClaudeCode => color_rgb(164, 122, 255),
-        ProviderKind::GeminiCli => color_rgb(214, 162, 59),
+        ProviderKind::Codex => color_rgb(67, 113, 239),
+        ProviderKind::Copilot => color_rgb(46, 169, 79),
+        ProviderKind::ClaudeCode => color_rgb(176, 131, 71),
+        ProviderKind::GeminiCli => color_rgb(132, 108, 239),
     }
 }
 

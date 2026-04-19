@@ -17,6 +17,7 @@ pub struct State {
     pub scale_factor: f32,
     pub anchor: Option<Rect>,
     pub selected_provider: Option<ProviderKind>,
+    pub show_about: bool,
     pub last_scrolled_at: Option<Instant>,
 }
 
@@ -28,6 +29,7 @@ impl Default for State {
             scale_factor: 1.0,
             anchor: None,
             selected_provider: None,
+            show_about: false,
             last_scrolled_at: None,
         }
     }
@@ -56,11 +58,12 @@ pub fn settings(visible: bool, skip_taskbar: bool, position: Option<Point>) -> w
         visible,
         resizable: false,
         decorations: false,
+        transparent: true,
         level: window::Level::Normal,
         exit_on_close_request: false,
         platform_specific: window::settings::PlatformSpecific {
             skip_taskbar,
-            undecorated_shadow: true,
+            undecorated_shadow: false,
             ..Default::default()
         },
         ..Default::default()

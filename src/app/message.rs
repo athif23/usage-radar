@@ -9,6 +9,7 @@ pub enum Message {
     Tick,
     PanelScrolled,
     SelectPage(Option<ProviderKind>),
+    OpenAbout,
     OpenConfigFolder,
     RefreshRequested(RefreshReason),
     RefreshFinished(Result<Vec<ProviderSnapshot>, String>),
