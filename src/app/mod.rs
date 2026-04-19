@@ -580,8 +580,9 @@ impl App {
     }
 
     fn provider_page_view(&self, kind: ProviderKind) -> Element<'_, Message> {
-        column![provider_panel(self.provider_card_model(kind), false)]
-            .spacing(10)
+        container(column![provider_panel(self.provider_card_model(kind), false)].spacing(10))
+            .width(Length::Fill)
+            .padding(Padding::ZERO.top(10.0).left(10.0).right(10.0))
             .into()
     }
 
@@ -902,7 +903,7 @@ fn provider_panel(model: ProviderCardModel, framed: bool) -> Element<'static, Me
             .style(move |_theme| provider_card_style(model.accent))
             .into()
     } else {
-        container(body).width(Length::Fill).padding([2, 4]).into()
+        container(body).width(Length::Fill).padding([2, 2]).into()
     }
 }
 
@@ -929,8 +930,8 @@ fn toolbar_icon_button(
 ) -> iced::widget::Button<'static, Message> {
     button(
         container(lucide_icon(icon))
-            .width(Length::Fixed(30.0))
-            .height(Length::Fixed(30.0))
+            .width(Length::Fixed(36.0))
+            .height(Length::Fixed(36.0))
             .align_x(alignment::Horizontal::Center)
             .align_y(alignment::Vertical::Center),
     )
