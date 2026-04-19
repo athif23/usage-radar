@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::time::SystemTime;
 
 use crate::panel;
+use crate::providers::ProviderKind;
 use crate::storage::cache::CachedSnapshots;
 use crate::storage::config::AppConfig;
 use crate::tray;
@@ -61,12 +62,15 @@ pub struct RefreshState {
 
 impl App {
     pub fn from_startup(data: StartupData) -> Self {
+        let mut panel = panel::State::default();
+        panel.selected_provider = data.config.selected_provider.unwrap_or(ProviderKind::Codex);
+
         Self {
             config: data.config,
             cache: data.cache,
             startup: data.report,
             tray: tray::State::default(),
-            panel: panel::State::default(),
+            panel,
             refresh: RefreshState::default(),
             runtime_notice: None,
         }

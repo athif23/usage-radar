@@ -4,8 +4,10 @@ use iced::window;
 use iced::{Point, Size};
 use tray_icon::Rect;
 
+use crate::providers::ProviderKind;
+
 pub const WIDTH: f32 = 384.0;
-pub const HEIGHT: f32 = 430.0;
+pub const HEIGHT: f32 = 520.0;
 const EDGE_MARGIN: f32 = 8.0;
 
 #[derive(Debug, Clone)]
@@ -14,6 +16,7 @@ pub struct State {
     pub visible: bool,
     pub scale_factor: f32,
     pub anchor: Option<Rect>,
+    pub selected_provider: ProviderKind,
     pub last_scrolled_at: Option<Instant>,
 }
 
@@ -24,6 +27,7 @@ impl Default for State {
             visible: false,
             scale_factor: 1.0,
             anchor: None,
+            selected_provider: ProviderKind::Codex,
             last_scrolled_at: None,
         }
     }

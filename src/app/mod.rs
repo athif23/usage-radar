@@ -2,6 +2,8 @@ pub mod message;
 mod startup;
 pub mod state;
 
+use std::fs;
+use std::process::Command;
 use std::time::{Duration, SystemTime};
 
 use iced::widget::{button, column, container, progress_bar, row, scrollable, text};
@@ -13,7 +15,7 @@ use tray_icon::menu::MenuEvent;
 use tray_icon::{MouseButton, MouseButtonState, TrayIconEvent};
 
 use crate::providers::{ProviderKind, ProviderSnapshot};
-use crate::storage::cache as cache_store;
+use crate::storage::{cache as cache_store, config as config_store};
 use crate::util::paths;
 
 use self::message::Message;
@@ -68,6 +70,8 @@ impl App {
                 self.panel.note_scrolled();
                 Task::none()
             }
+            Message::SelectProvider(kind) => self.handle_select_provider(kind),
+            Message::OpenConfigFolder => self.open_config_folder(),
             Message::RefreshRequested(reason) => self.request_refresh(reason),
             Message::RefreshFinished(result) => self.handle_refresh_finished(result),
             Message::HidePanel => self.hide_panel(),
@@ -109,21 +113,13 @@ impl App {
             return container(text("")).into();
         }
 
-        let mut content = column![
-            self.header_view(),
-            self.hero_view(),
-            self.providers_view(),
-            self.footer_view(),
-        ]
-        .spacing(12);
+        let mut content = column![self.top_bar_view(), self.selected_provider_view()].spacing(10);
 
         if let Some(notice) = self.notice_text() {
             content = content.push(notice_view(notice, self.notice_tone()));
         }
 
-        let scrollbar_is_active = self.panel.scrollbar_is_active();
-
-        let content = scrollable(content)
+        let scrollable_content = scrollable(content)
             .width(Length::Fill)
             .height(Length::Fill)
             .direction(iced::widget::scrollable::Direction::Vertical(
@@ -133,12 +129,18 @@ impl App {
                     .margin(1),
             ))
             .on_scroll(|_| Message::PanelScrolled)
-            .style(move |_theme, status| panel_scrollable_style(status, scrollbar_is_active));
+            .style(move |_theme, status| {
+                panel_scrollable_style(status, self.panel.scrollbar_is_active())
+            });
 
-        container(content)
+        let layout = column![scrollable_content, self.bottom_bar_view()]
+            .spacing(12)
+            .height(Length::Fill);
+
+        container(layout)
             .width(Length::Fill)
             .height(Length::Fill)
-            .padding(16)
+            .padding(14)
             .style(panel_shell_style)
             .into()
     }
@@ -268,6 +270,47 @@ impl App {
         }
     }
 
+    fn handle_select_provider(&mut self, kind: ProviderKind) -> Task<Message> {
+        self.panel.selected_provider = match kind {
+            ProviderKind::Copilot => ProviderKind::Copilot,
+            _ => ProviderKind::Codex,
+        };
+        self.config.selected_provider = Some(self.panel.selected_provider);
+        self.persist_config();
+        Task::none()
+    }
+
+    fn open_config_folder(&mut self) -> Task<Message> {
+        match paths::config_dir() {
+            Ok(path) => {
+                if let Err(error) = fs::create_dir_all(&path) {
+                    self.runtime_notice = Some(format!(
+                        "Failed to create config directory {}: {error}",
+                        path.display()
+                    ));
+                    return Task::none();
+                }
+
+                match Command::new("explorer").arg(&path).spawn() {
+                    Ok(_) => {
+                        self.runtime_notice = None;
+                    }
+                    Err(error) => {
+                        self.runtime_notice = Some(format!(
+                            "Failed to open config directory {}: {error}",
+                            path.display()
+                        ));
+                    }
+                }
+            }
+            Err(error) => {
+                self.runtime_notice = Some(error);
+            }
+        }
+
+        Task::none()
+    }
+
     fn request_refresh(&mut self, reason: RefreshReason) -> Task<Message> {
         if self.refresh.in_flight {
             self.refresh.queued_reason = Some(reason);
@@ -299,7 +342,9 @@ impl App {
         match result {
             Ok(providers) => {
                 self.refresh.last_error = None;
-                self.runtime_notice = None;
+                if self.runtime_notice == self.tray.init_error {
+                    self.runtime_notice = None;
+                }
                 self.merge_provider_snapshots(providers);
                 self.persist_cache();
             }
@@ -338,6 +383,25 @@ impl App {
                 match cache_store::save(&path, &self.cache) {
                     Ok(()) => {
                         self.startup.cache_state = FileLoadState::Loaded;
+                    }
+                    Err(error) => {
+                        self.runtime_notice = Some(error);
+                    }
+                }
+            }
+            Err(error) => {
+                self.runtime_notice = Some(error);
+            }
+        }
+    }
+
+    fn persist_config(&mut self) {
+        match paths::config_file_path() {
+            Ok(path) => {
+                self.startup.config_path = Some(path.clone());
+                match config_store::save(&path, &self.config) {
+                    Ok(()) => {
+                        self.startup.config_state = FileLoadState::Loaded;
                     }
                     Err(error) => {
                         self.runtime_notice = Some(error);
@@ -431,84 +495,64 @@ impl App {
             .map(|rect| crate::panel::anchor_point(rect, self.panel.scale_factor))
     }
 
-    fn header_view(&self) -> Element<'_, Message> {
-        let badges = row![
-            status_badge(self.shell_badge_text(), self.shell_badge_tone()),
-            status_badge(self.refresh_badge_text(), self.refresh_badge_tone()),
-        ]
-        .spacing(8)
-        .align_y(Alignment::Center)
-        .wrap();
-
-        let actions = row![
-            action_button(
-                "Refresh",
+    fn top_bar_view(&self) -> Element<'_, Message> {
+        row![
+            text(self.refresh_status_text())
+                .size(12)
+                .color(color_muted())
+                .width(Length::Fill),
+            icon_button(
+                "↻",
                 Message::RefreshRequested(RefreshReason::Manual),
                 Tone::Neutral,
             ),
-            action_button("Hide", Message::HidePanel, Tone::Danger),
+            icon_button("×", Message::HidePanel, Tone::Neutral),
         ]
-        .spacing(8)
+        .spacing(6)
         .align_y(Alignment::Center)
-        .wrap();
-
-        column![
-            text("Usage Radar").size(28).color(color_text()),
-            text("AI limits without dashboard friction")
-                .size(14)
-                .color(color_muted()),
-            badges,
-            actions,
-        ]
-        .spacing(8)
         .into()
     }
 
-    fn hero_view(&self) -> Element<'_, Message> {
-        let hero = column![
-            text(self.summary_headline()).size(30).color(color_text()),
-            text(self.summary_subtitle()).size(14).color(color_muted()),
+    fn selected_provider_view(&self) -> Element<'_, Message> {
+        provider_card(self.provider_card_data(self.panel.selected_provider))
+    }
+
+    fn bottom_bar_view(&self) -> Element<'_, Message> {
+        let tabs = row![
+            provider_tab_button(
+                ProviderKind::Codex,
+                self.panel.selected_provider == ProviderKind::Codex,
+                self.provider_tab_tone(ProviderKind::Codex),
+            ),
+            provider_tab_button(
+                ProviderKind::Copilot,
+                self.panel.selected_provider == ProviderKind::Copilot,
+                self.provider_tab_tone(ProviderKind::Copilot),
+            ),
+        ]
+        .spacing(6)
+        .align_y(Alignment::Center)
+        .width(Length::Fill);
+
+        container(
             row![
-                stat_chip("Tray", self.shell_chip_value()),
-                stat_chip("Refresh", self.refresh_chip_value()),
-                stat_chip("Dismiss", self.dismiss_chip_value()),
+                tabs,
+                icon_button("⚙", Message::OpenConfigFolder, Tone::Neutral)
             ]
             .spacing(8)
-            .wrap(),
-        ]
-        .spacing(10);
-
-        container(hero)
-            .width(Length::Fill)
-            .padding(16)
-            .style(hero_card_style)
-            .into()
-    }
-
-    fn providers_view(&self) -> Element<'_, Message> {
-        column![
-            text("PROVIDERS").size(11).color(color_label()),
-            provider_card(self.provider_card_data(ProviderKind::Codex)),
-            provider_card(self.provider_card_data(ProviderKind::Copilot)),
-        ]
-        .spacing(10)
+            .align_y(Alignment::Center),
+        )
+        .width(Length::Fill)
+        .padding([8, 10])
+        .style(bottom_bar_style)
         .into()
     }
 
-    fn footer_view(&self) -> Element<'_, Message> {
-        let footer = row![
-            footer_metric("Config", self.config_footer_value().to_string()),
-            footer_metric("Cache", self.cache_footer_value()),
-            footer_metric("Panel", self.panel_footer_value().to_string()),
-        ]
-        .spacing(8)
-        .wrap();
-
-        container(footer)
-            .width(Length::Fill)
-            .padding(10)
-            .style(footer_card_style)
-            .into()
+    fn provider_tab_tone(&self, kind: ProviderKind) -> Tone {
+        self.snapshot(kind)
+            .and_then(|snapshot| snapshot.summary_bar.as_ref())
+            .map(|bar| tone_for_percent_left(bar.percent_left))
+            .unwrap_or(Tone::Neutral)
     }
 
     fn provider_card_data(&self, kind: ProviderKind) -> ProviderCardData {
@@ -520,14 +564,14 @@ impl App {
                     badge: if self.refresh.in_flight {
                         "Refreshing".to_string()
                     } else {
-                        "No snapshot".to_string()
+                        "Waiting".to_string()
                     },
                     headline: if self.refresh.in_flight {
-                        "Checking Codex usage now".to_string()
+                        "Checking usage now".to_string()
                     } else {
-                        "No local usage snapshot yet".to_string()
+                        "No local snapshot yet".to_string()
                     },
-                    detail: "This card will show the 5h and weekly windows once the Codex source responds.".to_string(),
+                    detail: "The card will fill in once the Codex usage source responds.".to_string(),
                     percent_used: None,
                     detail_bars: Vec::new(),
                 },
@@ -536,7 +580,7 @@ impl App {
                     tone: Tone::Neutral,
                     badge: "Unavailable".to_string(),
                     headline: "Support not wired yet".to_string(),
-                    detail: "Copilot will stay honest about partial or estimated data when it arrives.".to_string(),
+                    detail: "Copilot stays visible here, but it will not pretend to know usage until a trustworthy source exists.".to_string(),
                     percent_used: None,
                     detail_bars: Vec::new(),
                 },
@@ -562,7 +606,7 @@ impl App {
                     "No value".to_string()
                 },
                 headline: "No trustworthy value available".to_string(),
-                detail: snapshot.notes.first().cloned().unwrap_or_else(|| {
+                detail: first_meaningful_note(snapshot).unwrap_or_else(|| {
                     "The provider is expected, but no reliable snapshot is available yet."
                         .to_string()
                 }),
@@ -573,27 +617,26 @@ impl App {
 
         if let Some(bar) = snapshot.summary_bar.as_ref() {
             let tone = tone_for_percent_left(bar.percent_left);
-            let badge = if snapshot.stale {
-                "Stale".to_string()
-            } else {
-                format!("{:.0}% left", bar.percent_left)
-            };
-
-            let detail = if snapshot.stale {
-                "Showing the last known value until a fresh refresh succeeds.".to_string()
-            } else {
-                format_reset_text(bar.reset_at)
-            };
 
             return ProviderCardData {
                 title: kind.label(),
-                tone,
-                badge,
+                tone: if snapshot.stale { Tone::Warning } else { tone },
+                badge: if snapshot.stale {
+                    "Stale".to_string()
+                } else {
+                    format!("{:.0}% left", bar.percent_left)
+                },
                 headline: format!(
                     "{:.0}% left · {:.0}% used",
                     bar.percent_left, bar.percent_used
                 ),
-                detail,
+                detail: if snapshot.stale {
+                    first_meaningful_note(snapshot).unwrap_or_else(|| {
+                        "Showing the last known value until refresh succeeds.".to_string()
+                    })
+                } else {
+                    format_reset_text(bar.reset_at)
+                },
                 percent_used: Some(bar.percent_used),
                 detail_bars: snapshot
                     .detail_bars
@@ -629,8 +672,8 @@ impl App {
                 "Partial".to_string()
             },
             headline: "Partial snapshot available".to_string(),
-            detail: snapshot.notes.first().cloned().unwrap_or_else(|| {
-                "Some provider data is present, but the summary bar is not ready yet.".to_string()
+            detail: first_meaningful_note(snapshot).unwrap_or_else(|| {
+                "Some provider data is present, but the summary row is not ready yet.".to_string()
             }),
             percent_used: None,
             detail_bars: Vec::new(),
@@ -644,175 +687,21 @@ impl App {
             .find(|snapshot| snapshot.kind == kind)
     }
 
-    fn best_snapshot(&self) -> Option<&ProviderSnapshot> {
-        self.cache
-            .providers
-            .iter()
-            .filter(|snapshot| !snapshot.unavailable)
-            .filter(|snapshot| snapshot.summary_bar.is_some())
-            .min_by(|left, right| {
-                let left_percent = left
-                    .summary_bar
-                    .as_ref()
-                    .map(|bar| bar.percent_left)
-                    .unwrap_or(101.0);
-                let right_percent = right
-                    .summary_bar
-                    .as_ref()
-                    .map(|bar| bar.percent_left)
-                    .unwrap_or(101.0);
-
-                left_percent.total_cmp(&right_percent)
-            })
-    }
-
-    fn summary_headline(&self) -> String {
-        let Some(snapshot) = self.best_snapshot() else {
-            return if self.refresh.in_flight {
-                "Checking Codex usage".to_string()
-            } else {
-                "No usage data yet".to_string()
-            };
-        };
-
-        let Some(bar) = snapshot.summary_bar.as_ref() else {
-            return format!("{} available", snapshot.kind.label());
-        };
-
-        format!("{} · {:.0}% left", snapshot.kind.label(), bar.percent_left)
-    }
-
-    fn summary_subtitle(&self) -> String {
-        let Some(snapshot) = self.best_snapshot() else {
-            return if self.refresh.in_flight {
-                "The app is fetching the first Codex snapshot now. Cached data will appear here immediately on future opens.".to_string()
-            } else if self.refresh.last_error.is_some() {
-                "The shell is live, but Codex refresh failed. Fix auth or connectivity and try again.".to_string()
-            } else {
-                "The tray shell is live. Open it fast, dismiss with Esc, and wire the first provider without dashboard sprawl.".to_string()
-            };
-        };
-
-        let Some(bar) = snapshot.summary_bar.as_ref() else {
-            return "A provider snapshot exists, but the summary row is not ready yet.".to_string();
-        };
-
-        if snapshot.stale {
-            format!(
-                "Showing the last known {} snapshot while the app waits for a fresh refresh.",
-                snapshot.kind.label()
-            )
-        } else {
-            format!("{} · {}", bar.label, format_reset_text(bar.reset_at))
-        }
-    }
-
-    fn shell_badge_text(&self) -> &'static str {
-        if self.tray.is_ready() {
-            "Tray active"
-        } else if self.tray.init_error.is_some() {
-            "Fallback mode"
-        } else {
-            "Starting"
-        }
-    }
-
-    fn shell_badge_tone(&self) -> Tone {
-        if self.tray.is_ready() {
-            Tone::Success
-        } else if self.tray.init_error.is_some() {
-            Tone::Warning
-        } else {
-            Tone::Neutral
-        }
-    }
-
-    fn refresh_badge_text(&self) -> &'static str {
+    fn refresh_status_text(&self) -> String {
         if self.refresh.in_flight {
-            "Refreshing"
+            "Refreshing…".to_string()
         } else if self.refresh.last_error.is_some() {
-            "Refresh error"
-        } else if self.refresh.last_finished_at.is_some() {
-            "Updated"
+            "Refresh failed · showing last known value".to_string()
+        } else if let Some(when) = self.refresh.last_finished_at {
+            format!("Updated {}", relative_time_text(when))
         } else {
-            "Waiting"
-        }
-    }
-
-    fn refresh_badge_tone(&self) -> Tone {
-        if self.refresh.in_flight {
-            Tone::Neutral
-        } else if self.refresh.last_error.is_some() {
-            Tone::Warning
-        } else if self.refresh.last_finished_at.is_some() {
-            Tone::Success
-        } else {
-            Tone::Neutral
-        }
-    }
-
-    fn shell_chip_value(&self) -> String {
-        if self.tray.is_ready() {
-            "Ready".to_string()
-        } else {
-            "Fallback".to_string()
-        }
-    }
-
-    fn refresh_chip_value(&self) -> String {
-        if self.refresh.in_flight {
-            return "In flight".to_string();
-        }
-
-        if let Some(when) = self.refresh.last_finished_at {
-            return relative_time_text(when);
-        }
-
-        if self.refresh.last_error.is_some() {
-            return "Failed".to_string();
-        }
-
-        "Pending".to_string()
-    }
-
-    fn dismiss_chip_value(&self) -> String {
-        if self.tray.is_ready() {
-            "Esc hides".to_string()
-        } else {
-            "Esc exits".to_string()
-        }
-    }
-
-    fn config_footer_value(&self) -> &'static str {
-        match self.startup.config_state {
-            FileLoadState::Loaded => "Loaded",
-            FileLoadState::Missing => "Defaults",
-            FileLoadState::Defaulted => "Fallback",
-            FileLoadState::NotChecked => "Pending",
-        }
-    }
-
-    fn cache_footer_value(&self) -> String {
-        match self.cache.providers.len() {
-            0 => "Empty".to_string(),
-            1 => "1 snapshot".to_string(),
-            count => format!("{count} snapshots"),
-        }
-    }
-
-    fn panel_footer_value(&self) -> &'static str {
-        if self.panel.anchor.is_some() {
-            "Anchored"
-        } else {
-            "Floating"
+            "Waiting for first refresh".to_string()
         }
     }
 
     fn notice_text(&self) -> Option<String> {
         if let Some(notice) = &self.runtime_notice {
             Some(notice.clone())
-        } else if let Some(error) = &self.refresh.last_error {
-            Some(error.clone())
         } else if !self.startup.notes.is_empty() {
             Some(self.startup.notes.join("  •  "))
         } else {
@@ -822,8 +711,6 @@ impl App {
 
     fn notice_tone(&self) -> Tone {
         if self.runtime_notice.is_some() {
-            Tone::Warning
-        } else if self.refresh.last_error.is_some() {
             Tone::Warning
         } else {
             Tone::Neutral
@@ -874,19 +761,19 @@ fn provider_card(data: ProviderCardData) -> Element<'static, Message> {
     let badge = status_badge_owned(data.badge, data.tone);
 
     let mut body = column![
-        row![text(data.title).size(18).color(color_text()), badge,]
+        row![text(data.title).size(17).color(color_text()), badge]
+            .spacing(8)
             .align_y(Alignment::Center)
-            .spacing(10)
             .wrap(),
-        text(data.headline).size(15).color(color_text()),
-        text(data.detail).size(13).color(color_muted()),
+        text(data.headline).size(14).color(color_text()),
+        text(data.detail).size(12).color(color_muted()),
     ]
-    .spacing(8);
+    .spacing(7);
 
     if let Some(percent_used) = data.percent_used {
         body = body.push(
             progress_bar(0.0..=100.0, percent_used)
-                .height(6)
+                .height(5)
                 .style(move |_theme| progress_style(data.tone)),
         );
     }
@@ -897,7 +784,7 @@ fn provider_card(data: ProviderCardData) -> Element<'static, Message> {
 
     container(body)
         .width(Length::Fill)
-        .padding(14)
+        .padding(12)
         .style(move |_theme| provider_card_style(data.tone))
         .into()
 }
@@ -905,7 +792,7 @@ fn provider_card(data: ProviderCardData) -> Element<'static, Message> {
 fn detail_bar(data: DetailBarData) -> Element<'static, Message> {
     column![
         text(data.label).size(12).color(color_text()),
-        text(data.detail).size(12).color(color_muted()),
+        text(data.detail).size(11).color(color_muted()),
         progress_bar(0.0..=100.0, data.percent_used)
             .height(4)
             .style(move |_theme| progress_style(data.tone)),
@@ -914,26 +801,33 @@ fn detail_bar(data: DetailBarData) -> Element<'static, Message> {
     .into()
 }
 
-fn action_button<'a>(
-    label: &'a str,
-    message: Message,
+fn provider_tab_button(
+    kind: ProviderKind,
+    active: bool,
     tone: Tone,
-) -> iced::widget::Button<'a, Message> {
-    button(text(label).size(13))
-        .padding([8, 12])
-        .style(move |_theme, status| action_button_style(tone, status))
-        .on_press(message)
+) -> iced::widget::Button<'static, Message> {
+    button(text(compact_provider_label(kind)).size(12))
+        .padding([6, 10])
+        .style(move |_theme, status| provider_tab_style(active, tone, status))
+        .on_press(Message::SelectProvider(kind))
 }
 
-fn status_badge(label: &'static str, tone: Tone) -> Element<'static, Message> {
-    status_badge_owned(label.to_string(), tone)
+fn icon_button(
+    label: &'static str,
+    message: Message,
+    tone: Tone,
+) -> iced::widget::Button<'static, Message> {
+    button(text(label).size(13).color(color_text()))
+        .padding([5, 8])
+        .style(move |_theme, status| icon_button_style(tone, status))
+        .on_press(message)
 }
 
 fn status_badge_owned(label: String, tone: Tone) -> Element<'static, Message> {
     let colors = tone_colors(tone);
 
-    container(text(label).size(11).color(colors.text))
-        .padding([4, 8])
+    container(text(label).size(10).color(colors.text))
+        .padding([3, 7])
         .style(move |_theme| iced::widget::container::Style {
             background: Some(colors.background.into()),
             border: Border {
@@ -946,49 +840,40 @@ fn status_badge_owned(label: String, tone: Tone) -> Element<'static, Message> {
         .into()
 }
 
-fn stat_chip(label: &'static str, value: String) -> Element<'static, Message> {
-    container(
-        column![
-            text(value).size(13).color(color_text()),
-            text(label).size(11).color(color_label()),
-        ]
-        .spacing(2),
-    )
-    .padding([8, 10])
-    .style(chip_style)
-    .into()
-}
-
-fn footer_metric(label: &'static str, value: String) -> Element<'static, Message> {
-    container(
-        column![
-            text(value).size(13).color(color_text()),
-            text(label).size(11).color(color_label()),
-        ]
-        .spacing(2),
-    )
-    .width(Length::Fill)
-    .padding([8, 10])
-    .style(chip_style)
-    .into()
-}
-
 fn notice_view(message: String, tone: Tone) -> Element<'static, Message> {
     let colors = tone_colors(tone);
 
-    container(text(message).size(12).color(colors.text))
+    container(text(message).size(11).color(colors.text))
         .width(Length::Fill)
-        .padding(12)
+        .padding(10)
         .style(move |_theme| iced::widget::container::Style {
             background: Some(surface_raised().into()),
             border: Border {
                 width: 1.0,
-                radius: 12.0.into(),
+                radius: 10.0.into(),
                 color: colors.border,
             },
             ..Default::default()
         })
         .into()
+}
+
+fn compact_provider_label(kind: ProviderKind) -> &'static str {
+    match kind {
+        ProviderKind::Codex => "Codex",
+        ProviderKind::Copilot => "Copilot",
+        ProviderKind::ClaudeCode => "Claude",
+        ProviderKind::GeminiCli => "Gemini",
+    }
+}
+
+fn first_meaningful_note(snapshot: &ProviderSnapshot) -> Option<String> {
+    snapshot
+        .notes
+        .iter()
+        .find(|note| !note.starts_with("Plan:"))
+        .cloned()
+        .or_else(|| snapshot.notes.first().cloned())
 }
 
 fn format_reset_text(reset_at: Option<SystemTime>) -> String {
@@ -1044,27 +929,27 @@ struct ToneColors {
 fn tone_colors(tone: Tone) -> ToneColors {
     match tone {
         Tone::Neutral => ToneColors {
-            background: color_rgb(31, 34, 39),
-            text: color_rgb(180, 186, 194),
-            border: color_rgb(74, 79, 87),
-            bar: color_rgb(132, 139, 148),
+            background: color_rgb(29, 31, 35),
+            text: color_rgb(182, 188, 196),
+            border: color_rgb(62, 67, 74),
+            bar: color_rgb(128, 135, 144),
         },
         Tone::Success => ToneColors {
-            background: color_rgb(31, 47, 41),
-            text: color_rgb(155, 213, 181),
-            border: color_rgb(71, 108, 90),
-            bar: color_rgb(103, 190, 142),
+            background: color_rgb(29, 43, 36),
+            text: color_rgb(156, 214, 182),
+            border: color_rgb(68, 104, 86),
+            bar: color_rgb(102, 190, 141),
         },
         Tone::Warning => ToneColors {
-            background: color_rgb(53, 43, 27),
-            text: color_rgb(228, 194, 121),
-            border: color_rgb(117, 93, 56),
-            bar: color_rgb(226, 176, 79),
+            background: color_rgb(47, 40, 27),
+            text: color_rgb(226, 195, 124),
+            border: color_rgb(103, 84, 53),
+            bar: color_rgb(219, 172, 79),
         },
         Tone::Danger => ToneColors {
-            background: color_rgb(58, 31, 34),
-            text: color_rgb(235, 165, 174),
-            border: color_rgb(125, 67, 76),
+            background: color_rgb(52, 30, 33),
+            text: color_rgb(235, 168, 176),
+            border: color_rgb(120, 68, 75),
             bar: color_rgb(223, 96, 117),
         },
     }
@@ -1072,28 +957,16 @@ fn tone_colors(tone: Tone) -> ToneColors {
 
 fn panel_shell_style(_theme: &Theme) -> iced::widget::container::Style {
     iced::widget::container::Style {
-        background: Some(color_rgb(19, 21, 25).into()),
-        border: Border {
-            width: 1.0,
-            radius: 16.0.into(),
-            color: color_rgb(67, 71, 78),
-        },
-        shadow: Shadow {
-            color: Color::from_rgba8(0, 0, 0, 0.22),
-            offset: iced::Vector::new(0.0, 6.0),
-            blur_radius: 18.0,
-        },
-        ..Default::default()
-    }
-}
-
-fn hero_card_style(_theme: &Theme) -> iced::widget::container::Style {
-    iced::widget::container::Style {
-        background: Some(surface_primary().into()),
+        background: Some(color_rgb(18, 20, 24).into()),
         border: Border {
             width: 1.0,
             radius: 14.0.into(),
-            color: color_rgb(71, 76, 83),
+            color: color_rgb(60, 64, 70),
+        },
+        shadow: Shadow {
+            color: Color::from_rgba8(0, 0, 0, 0.18),
+            offset: iced::Vector::new(0.0, 4.0),
+            blur_radius: 14.0,
         },
         ..Default::default()
     }
@@ -1106,67 +979,92 @@ fn provider_card_style(tone: Tone) -> iced::widget::container::Style {
         background: Some(surface_raised().into()),
         border: Border {
             width: 1.0,
-            radius: 14.0.into(),
+            radius: 12.0.into(),
             color: colors.border,
         },
         ..Default::default()
     }
 }
 
-fn footer_card_style(_theme: &Theme) -> iced::widget::container::Style {
+fn bottom_bar_style(_theme: &Theme) -> iced::widget::container::Style {
     iced::widget::container::Style {
         background: Some(surface_primary().into()),
         border: Border {
             width: 1.0,
             radius: 12.0.into(),
-            color: color_rgb(71, 76, 83),
+            color: color_rgb(60, 64, 70),
         },
         ..Default::default()
     }
 }
 
-fn chip_style(_theme: &Theme) -> iced::widget::container::Style {
-    iced::widget::container::Style {
-        background: Some(color_rgb(29, 31, 36).into()),
-        border: Border {
-            width: 1.0,
-            radius: 10.0.into(),
-            color: color_rgb(64, 68, 75),
-        },
-        ..Default::default()
-    }
-}
-
-fn action_button_style(tone: Tone, status: button::Status) -> button::Style {
-    let colors = tone_colors(tone);
-    let mut background = match tone {
-        Tone::Danger => color_rgb(33, 26, 29),
-        _ => color_rgb(30, 33, 39),
+fn provider_tab_style(active: bool, tone: Tone, status: button::Status) -> button::Style {
+    let colors = tone_colors(if active { tone } else { Tone::Neutral });
+    let mut background = if active {
+        color_rgb(30, 35, 39)
+    } else {
+        color_rgb(24, 26, 30)
     };
-    let mut border = colors.border;
+    let mut border = if active {
+        colors.border
+    } else {
+        color_rgb(52, 56, 62)
+    };
+    let mut text_color = if active { color_text() } else { color_muted() };
 
     match status {
         button::Status::Hovered => {
-            background = match tone {
-                Tone::Danger => color_rgb(49, 31, 36),
-                _ => color_rgb(39, 43, 50),
+            background = if active {
+                color_rgb(34, 38, 43)
+            } else {
+                color_rgb(30, 33, 38)
             };
+            text_color = color_text();
         }
         button::Status::Pressed => {
-            background = match tone {
-                Tone::Danger => color_rgb(67, 36, 42),
-                _ => color_rgb(25, 28, 33),
-            };
+            background = color_rgb(22, 24, 28);
+            border = colors.text;
+        }
+        button::Status::Disabled => {
+            text_color = color_rgb(98, 103, 111);
+        }
+        button::Status::Active => {}
+    }
+
+    button::Style {
+        background: Some(background.into()),
+        text_color,
+        border: Border {
+            width: 1.0,
+            radius: 999.0.into(),
+            color: border,
+        },
+        shadow: Shadow::default(),
+    }
+}
+
+fn icon_button_style(tone: Tone, status: button::Status) -> button::Style {
+    let colors = tone_colors(tone);
+    let mut background = color_rgb(24, 26, 30);
+    let mut border = color_rgb(50, 54, 60);
+
+    match status {
+        button::Status::Hovered => {
+            background = color_rgb(31, 34, 39);
+            border = colors.border;
+        }
+        button::Status::Pressed => {
+            background = color_rgb(20, 22, 26);
             border = colors.text;
         }
         button::Status::Disabled => {
             return button::Style {
-                background: Some(color_rgb(24, 26, 30).into()),
+                background: Some(color_rgb(22, 24, 28).into()),
                 text_color: color_rgb(98, 103, 111),
                 border: Border {
                     width: 1.0,
-                    radius: 10.0.into(),
-                    color: color_rgb(49, 52, 58),
+                    radius: 8.0.into(),
+                    color: color_rgb(45, 48, 53),
                 },
                 shadow: Shadow::default(),
             };
@@ -1176,10 +1074,10 @@ fn action_button_style(tone: Tone, status: button::Status) -> button::Style {
 
     button::Style {
         background: Some(background.into()),
-        text_color: colors.text,
+        text_color: color_text(),
         border: Border {
             width: 1.0,
-            radius: 10.0.into(),
+            radius: 8.0.into(),
             color: border,
         },
         shadow: Shadow::default(),
@@ -1190,7 +1088,7 @@ fn progress_style(tone: Tone) -> progress_bar::Style {
     let colors = tone_colors(tone);
 
     progress_bar::Style {
-        background: color_rgb(34, 36, 42).into(),
+        background: color_rgb(31, 33, 38).into(),
         bar: colors.bar.into(),
         border: Border {
             width: 0.0,
@@ -1205,11 +1103,11 @@ fn panel_scrollable_style(
     scrollbar_is_active: bool,
 ) -> iced::widget::scrollable::Style {
     let active = scroll_rail(
-        if scrollbar_is_active { 0.05 } else { 0.0 },
-        if scrollbar_is_active { 0.34 } else { 0.10 },
+        if scrollbar_is_active { 0.04 } else { 0.0 },
+        if scrollbar_is_active { 0.28 } else { 0.08 },
     );
-    let hovered = scroll_rail(0.08, 0.72);
-    let dragged = scroll_rail(0.12, 0.88);
+    let hovered = scroll_rail(0.08, 0.62);
+    let dragged = scroll_rail(0.12, 0.82);
 
     match status {
         iced::widget::scrollable::Status::Active => iced::widget::scrollable::Style {
@@ -1279,23 +1177,19 @@ fn scroll_rail(rail_alpha: f32, scroller_alpha: f32) -> iced::widget::scrollable
 }
 
 fn color_text() -> Color {
-    color_rgb(235, 238, 242)
+    color_rgb(236, 239, 242)
 }
 
 fn color_muted() -> Color {
-    color_rgb(164, 170, 180)
-}
-
-fn color_label() -> Color {
-    color_rgb(124, 131, 141)
+    color_rgb(159, 166, 175)
 }
 
 fn surface_primary() -> Color {
-    color_rgb(24, 27, 32)
+    color_rgb(22, 24, 29)
 }
 
 fn surface_raised() -> Color {
-    color_rgb(28, 31, 36)
+    color_rgb(27, 30, 35)
 }
 
 fn color_rgb(red: u8, green: u8, blue: u8) -> Color {

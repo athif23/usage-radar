@@ -1,13 +1,15 @@
 use iced::window;
 
 use crate::app::state::RefreshReason;
-use crate::providers::ProviderSnapshot;
+use crate::providers::{ProviderKind, ProviderSnapshot};
 
 #[derive(Debug, Clone)]
 pub enum Message {
     AppStarted,
     Tick,
     PanelScrolled,
+    SelectProvider(ProviderKind),
+    OpenConfigFolder,
     RefreshRequested(RefreshReason),
     RefreshFinished(Result<Vec<ProviderSnapshot>, String>),
     HidePanel,
