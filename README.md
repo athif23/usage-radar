@@ -13,8 +13,7 @@ This project is built with Rust and [`iced`](https://github.com/iced-rs/iced). I
 - no billing dashboard sprawl
 - no pretending partial data is exact
 
-> [!IMPORTANT]
-> Usage Radar is an unofficial utility. It is not affiliated with OpenAI or GitHub.
+Usage Radar is an unofficial utility and is not affiliated with OpenAI or GitHub.
 
 ## Why it exists
 
@@ -27,6 +26,8 @@ AI usage limits are spread across too many places:
 - and sometimes nowhere obvious at all
 
 That creates daily friction.
+
+There are already apps in this space, but many of them are either built with Tauri or Electron, or only available as macOS apps. Usage Radar exists because I wanted a compact Windows-first app built directly with Rust and `iced`.
 
 Usage Radar is meant to feel like a small Windows utility you can pop open many times a day for a fast, trustworthy answer.
 
@@ -70,7 +71,7 @@ GitHub Copilot can return usable quota percentages while still omitting some tim
 
 ## Why this repo may be useful if you're learning `iced`
 
-Usage Radar is a small real app, not a demo widget gallery. If you are learning `iced`, this repo may be useful because it shows how to build a tray-first desktop utility around a compact popup UI.
+Usage Radar is a small real app, not a demo widget gallery. If you are learning `iced`, this repo may be useful because it shows how to build a tray-first desktop utility around a compact popup UI without leaning on Tauri, Electron, or a webview shell.
 
 Things this repo demonstrates:
 
