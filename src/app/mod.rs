@@ -11,8 +11,8 @@ use iced::widget::{
     button, column, container, horizontal_space, mouse_area, progress_bar, row, scrollable, text,
 };
 use iced::{
-    alignment, clipboard, event, keyboard, window, Alignment, Border, Color, Element, Event, Font,
-    Length, Padding, Shadow, Subscription, Task, Theme,
+    alignment, clipboard, event, keyboard, mouse, window, Alignment, Border, Color, Element, Event,
+    Font, Length, Padding, Shadow, Subscription, Task, Theme,
 };
 use lucide_icons::Icon as LucideIcon;
 use tray_icon::menu::MenuEvent;
@@ -746,9 +746,7 @@ impl App {
         .spacing(6)
         .align_y(Alignment::Start);
 
-        column![drag_strip_view(), tabs, divider_line()]
-            .spacing(6)
-            .into()
+        column![tabs, divider_line()].spacing(6).into()
     }
 
     fn page_content_view(&self) -> Element<'_, Message> {
@@ -887,13 +885,20 @@ impl App {
 
         column![
             divider_line(),
-            row![
-                left_actions,
-                horizontal_space(),
-                toolbar_icon_button(LucideIcon::X, Message::QuitRequested),
-            ]
-            .align_y(Alignment::Center)
-            .padding(Padding::ZERO.top(4.0).bottom(0.0)),
+            mouse_area(
+                container(
+                    row![
+                        left_actions,
+                        horizontal_space(),
+                        toolbar_icon_button(LucideIcon::X, Message::QuitRequested),
+                    ]
+                    .align_y(Alignment::Center),
+                )
+                .width(Length::Fill)
+                .padding(Padding::ZERO.top(4.0).bottom(0.0)),
+            )
+            .interaction(mouse::Interaction::Grab)
+            .on_press(Message::StartPanelDrag),
         ]
         .spacing(0)
         .into()
@@ -1071,16 +1076,6 @@ fn handle_escape_key(event: Event, _status: event::Status, window: window::Id) -
         },
         _ => None,
     }
-}
-
-fn drag_strip_view() -> Element<'static, Message> {
-    mouse_area(
-        container(text(""))
-            .width(Length::Fill)
-            .height(Length::Fixed(14.0)),
-    )
-    .on_press(Message::StartPanelDrag)
-    .into()
 }
 
 fn page_tab_button(
