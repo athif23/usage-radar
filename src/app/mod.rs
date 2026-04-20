@@ -132,7 +132,7 @@ impl App {
             return container(text("")).into();
         }
 
-        let mut body = column![self.page_content_view()].spacing(10);
+        let mut body = column![self.page_content_view()].spacing(8);
 
         if let Some(notice) = self.notice_text() {
             body = body.push(notice_view(notice, self.notice_tone()));
@@ -157,13 +157,13 @@ impl App {
             scrollable_body,
             self.bottom_menu_view()
         ]
-        .spacing(10)
+        .spacing(8)
         .height(Length::Fill);
 
         container(layout)
             .width(Length::Fill)
             .height(Length::Fill)
-            .padding(Padding::new(12.0).bottom(6.0))
+            .padding(Padding::new(10.0).bottom(5.0))
             .style(panel_shell_style)
             .into()
     }
@@ -743,10 +743,10 @@ impl App {
                 provider_accent(ProviderKind::ClaudeCode),
             ),
         ]
-        .spacing(6)
+        .spacing(4)
         .align_y(Alignment::Start);
 
-        column![tabs, divider_line()].spacing(6).into()
+        column![tabs, divider_line()].spacing(4).into()
     }
 
     fn page_content_view(&self) -> Element<'_, Message> {
@@ -765,7 +765,7 @@ impl App {
             provider_card(self.provider_card_model(ProviderKind::Codex)),
             provider_card(self.provider_card_model(ProviderKind::Copilot)),
         ]
-        .spacing(14)
+        .spacing(10)
         .into()
     }
 
@@ -774,14 +774,14 @@ impl App {
             return self.copilot_page_view();
         }
 
-        container(column![provider_panel(self.provider_card_model(kind), false, true)].spacing(10))
+        container(column![provider_panel(self.provider_card_model(kind), false, true)].spacing(8))
             .width(Length::Fill)
-            .padding(Padding::ZERO.top(10.0).left(10.0).right(10.0))
+            .padding(Padding::ZERO.top(8.0).left(8.0).right(8.0))
             .into()
     }
 
     fn copilot_page_view(&self) -> Element<'_, Message> {
-        let mut body = column![copilot_page_header(self.copilot_auth.has_saved_token)].spacing(12);
+        let mut body = column![copilot_page_header(self.copilot_auth.has_saved_token)].spacing(10);
 
         if self.copilot_auth.awaiting_snapshot {
             body = body.push(action_status_card(
@@ -821,7 +821,7 @@ impl App {
 
         container(body)
             .width(Length::Fill)
-            .padding(Padding::ZERO.top(10.0).left(10.0).right(10.0))
+            .padding(Padding::ZERO.top(8.0).left(8.0).right(8.0))
             .into()
     }
 
@@ -844,29 +844,29 @@ impl App {
             .unwrap_or_else(|| "Unavailable".to_string());
 
         let card = column![
-            text("Usage Radar").size(21).color(color_text()),
+            text("Usage Radar").size(18).color(color_text()),
             text("Tray-first usage monitor for local AI tools.")
-                .size(14)
+                .size(13)
                 .color(color_text()),
             text(
                 "Codex is wired first. Copilot uses GitHub sign-in plus GitHub's Copilot usage API. Claude and Gemini stay honest until trustworthy sources are implemented."
             )
-            .size(13)
+            .size(12)
             .color(color_muted()),
             divider_line(),
-            text(format!("Version {version}")).size(13).color(color_text()),
+            text(format!("Version {version}")).size(12).color(color_text()),
             text(format!("Config: {config_path}"))
-                .size(12)
+                .size(11)
                 .color(color_muted()),
             text(format!("Cache: {cache_path}"))
-                .size(12)
+                .size(11)
                 .color(color_muted()),
         ]
-        .spacing(8);
+        .spacing(6);
 
         container(card)
             .width(Length::Fill)
-            .padding(14)
+            .padding(12)
             .style(|_theme| provider_card_style(color_border()))
             .into()
     }
@@ -880,7 +880,7 @@ impl App {
             ),
             toolbar_icon_button(LucideIcon::CircleHelp, Message::OpenAbout),
         ]
-        .spacing(8)
+        .spacing(6)
         .align_y(Alignment::Center);
 
         column![
@@ -895,7 +895,7 @@ impl App {
                     .align_y(Alignment::Center),
                 )
                 .width(Length::Fill)
-                .padding(Padding::ZERO.top(4.0).bottom(0.0)),
+                .padding(Padding::ZERO.top(3.0).bottom(0.0)),
             )
             .interaction(mouse::Interaction::Grab)
             .on_press(Message::StartPanelDrag),
@@ -1092,17 +1092,17 @@ fn page_tab_button(
             .width(Length::Fill)
             .align_x(alignment::Horizontal::Center),
         text(label)
-            .size(13)
+            .size(12)
             .color(if active { color_text() } else { color_muted() }),
     ]
-    .spacing(4)
+    .spacing(3)
     .align_x(alignment::Horizontal::Center)
     .width(Length::Fill);
 
     container(
         button(content)
             .width(Length::Fill)
-            .padding([8, 6])
+            .padding([6, 4])
             .style(move |_theme, status| page_tab_style(active, status))
             .on_press(message),
     )
@@ -1112,8 +1112,8 @@ fn page_tab_button(
 
 fn tab_icon(icon: TabIcon, color: Color) -> Element<'static, Message> {
     svg::Svg::new(tab_icon_handle(icon))
-        .width(Length::Fixed(16.0))
-        .height(Length::Fixed(16.0))
+        .width(Length::Fixed(14.0))
+        .height(Length::Fixed(14.0))
         .style(move |_theme, _status| svg::Style { color: Some(color) })
         .into()
 }
@@ -1149,11 +1149,11 @@ fn provider_panel(
     if framed {
         container(body)
             .width(Length::Fill)
-            .padding(14)
+            .padding(12)
             .style(move |_theme| provider_card_style(accent))
             .into()
     } else {
-        container(body).width(Length::Fill).padding([2, 2]).into()
+        container(body).width(Length::Fill).padding([1, 1]).into()
     }
 }
 
@@ -1161,22 +1161,22 @@ fn provider_panel_body(
     model: ProviderCardModel,
     show_title: bool,
 ) -> iced::widget::Column<'static, Message> {
-    let mut body = column!().spacing(8);
+    let mut body = column!().spacing(6);
 
     if show_title {
-        body = body.push(text(model.title).size(17).color(color_text()));
+        body = body.push(text(model.title).size(15).color(color_text()));
     }
 
     if let Some(subtitle) = model.subtitle {
-        body = body.push(text(subtitle).size(12).color(color_muted()));
+        body = body.push(text(subtitle).size(11).color(color_muted()));
     }
 
     if let Some(headline) = model.headline {
-        body = body.push(text(headline).size(14).color(color_text()));
+        body = body.push(text(headline).size(13).color(color_text()));
     }
 
     if let Some(detail) = model.detail {
-        body = body.push(text(detail).size(12).color(color_muted()));
+        body = body.push(text(detail).size(11).color(color_muted()));
     }
 
     for section in model.sections {
@@ -1189,29 +1189,29 @@ fn provider_panel_body(
 fn provider_section(section: ProviderSection) -> Element<'static, Message> {
     let footer: Element<'static, Message> = if let Some(trailing) = section.trailing {
         row![
-            text(section.leading).size(12).color(color_text()),
+            text(section.leading).size(11).color(color_text()),
             horizontal_space(),
-            text(trailing).size(12).color(color_muted()),
+            text(trailing).size(11).color(color_muted()),
         ]
         .align_y(Alignment::Center)
         .into()
     } else {
-        text(section.leading).size(12).color(color_text()).into()
+        text(section.leading).size(11).color(color_text()).into()
     };
 
     column![
-        text(section.title).size(14).color(color_text()),
+        text(section.title).size(13).color(color_text()),
         progress_bar(0.0..=100.0, section.progress)
-            .height(8)
+            .height(7)
             .style(move |_theme| progress_style(section.accent)),
         footer,
     ]
-    .spacing(6)
+    .spacing(5)
     .into()
 }
 
 fn copilot_page_header(has_saved_token: bool) -> Element<'static, Message> {
-    let mut header = row![text("Copilot").size(17).color(color_text())]
+    let mut header = row![text("Copilot").size(15).color(color_text())]
         .align_y(Alignment::Center)
         .width(Length::Fill);
 
@@ -1225,19 +1225,19 @@ fn copilot_page_header(has_saved_token: bool) -> Element<'static, Message> {
         ));
     }
 
-    column![header, divider_line()].spacing(10).into()
+    column![header, divider_line()].spacing(8).into()
 }
 
 fn action_status_card(title: &'static str, detail: &str) -> Element<'static, Message> {
     container(
         column![
-            text(title).size(14).color(color_text()),
-            text(detail.to_string()).size(12).color(color_muted()),
+            text(title).size(13).color(color_text()),
+            text(detail.to_string()).size(11).color(color_muted()),
         ]
-        .spacing(6),
+        .spacing(5),
     )
     .width(Length::Fill)
-    .padding(12)
+    .padding(10)
     .style(|_theme| provider_card_style(color_border()))
     .into()
 }
@@ -1247,28 +1247,28 @@ fn copilot_waiting_card(
 ) -> Element<'static, Message> {
     container(
         column![
-            text("Finish GitHub sign-in").size(14).color(color_text()),
+            text("Finish GitHub sign-in").size(13).color(color_text()),
             text("A browser tab should already be open. If not, open GitHub manually below and finish approval.")
-                .size(12)
+                .size(11)
                 .color(color_muted()),
             row![
-                container(text(prompt.user_code.clone()).size(20).color(color_text()))
-                    .padding([10, 12])
+                container(text(prompt.user_code.clone()).size(18).color(color_text()))
+                    .padding([9, 11])
                     .style(|_theme| iced::widget::container::Style {
                         background: Some(surface_shell().into()),
                         border: Border {
                             width: 1.0,
-                            radius: 12.0.into(),
+                            radius: 10.0.into(),
                             color: color_border(),
                         },
                         ..Default::default()
                     }),
                 code_copy_button(Message::CopyCopilotCode),
             ]
-            .spacing(8)
+            .spacing(6)
             .align_y(Alignment::Center),
             text(prompt.verification_uri.clone())
-                .size(12)
+                .size(11)
                 .color(color_muted()),
             primary_action_button(
                 "Open GitHub",
@@ -1276,10 +1276,10 @@ fn copilot_waiting_card(
                 Message::OpenCopilotVerification,
             ),
         ]
-        .spacing(10),
+        .spacing(8),
     )
     .width(Length::Fill)
-    .padding(12)
+    .padding(10)
     .style(|_theme| provider_card_style(color_border()))
     .into()
 }
@@ -1289,9 +1289,9 @@ fn primary_action_button(
     accent: Color,
     message: Message,
 ) -> iced::widget::Button<'static, Message> {
-    button(text(label).size(13).color(color_text()))
+    button(text(label).size(12).color(color_text()))
         .width(Length::Fill)
-        .padding([10, 12])
+        .padding([9, 10])
         .style(move |_theme, status| primary_action_button_style(accent, status))
         .on_press(message)
 }
@@ -1305,13 +1305,13 @@ fn inline_action_button(
         row![
             text(char::from(icon).to_string())
                 .font(Font::with_name("lucide"))
-                .size(15),
-            text(label).size(12),
+                .size(14),
+            text(label).size(11),
         ]
-        .spacing(6)
+        .spacing(5)
         .align_y(Alignment::Center),
     )
-    .padding([4, 0])
+    .padding([3, 0])
     .style(inline_action_button_style)
     .on_press(message)
 }
@@ -1321,11 +1321,11 @@ fn code_copy_button(message: Message) -> iced::widget::Button<'static, Message> 
         container(
             text(char::from(LucideIcon::Copy).to_string())
                 .font(Font::with_name("lucide"))
-                .size(16)
+                .size(15)
                 .color(color_text()),
         )
-        .width(Length::Fixed(42.0))
-        .height(Length::Fixed(42.0))
+        .width(Length::Fixed(38.0))
+        .height(Length::Fixed(38.0))
         .align_x(alignment::Horizontal::Center)
         .align_y(alignment::Vertical::Center),
     )
@@ -1340,8 +1340,8 @@ fn toolbar_icon_button(
 ) -> iced::widget::Button<'static, Message> {
     button(
         container(lucide_icon(icon))
-            .width(Length::Fixed(36.0))
-            .height(Length::Fixed(36.0))
+            .width(Length::Fixed(34.0))
+            .height(Length::Fixed(34.0))
             .align_x(alignment::Horizontal::Center)
             .align_y(alignment::Vertical::Center),
     )
@@ -1353,7 +1353,7 @@ fn toolbar_icon_button(
 fn lucide_icon(icon: LucideIcon) -> Element<'static, Message> {
     text(char::from(icon).to_string())
         .font(Font::with_name("lucide"))
-        .size(17)
+        .size(16)
         .color(color_text())
         .into()
 }
@@ -1361,14 +1361,14 @@ fn lucide_icon(icon: LucideIcon) -> Element<'static, Message> {
 fn notice_view(message: String, tone: Tone) -> Element<'static, Message> {
     let colors = tone_colors(tone);
 
-    container(text(message).size(12).color(colors.text))
+    container(text(message).size(11).color(colors.text))
         .width(Length::Fill)
-        .padding(12)
+        .padding(10)
         .style(move |_theme| iced::widget::container::Style {
             background: Some(surface_card().into()),
             border: Border {
                 width: 1.0,
-                radius: 12.0.into(),
+                radius: 10.0.into(),
                 color: colors.border,
             },
             ..Default::default()
@@ -1525,7 +1525,7 @@ fn provider_card_style(_accent: Color) -> iced::widget::container::Style {
         background: Some(surface_card().into()),
         border: Border {
             width: 1.0,
-            radius: 16.0.into(),
+            radius: 14.0.into(),
             color: color_border(),
         },
         ..Default::default()
@@ -1563,7 +1563,7 @@ fn page_tab_style(active: bool, status: button::Status) -> button::Style {
         text_color,
         border: Border {
             width: 0.0,
-            radius: 14.0.into(),
+            radius: 12.0.into(),
             color: Color::TRANSPARENT,
         },
         shadow: Shadow::default(),
@@ -1601,7 +1601,7 @@ fn inline_action_button_style(_theme: &Theme, status: button::Status) -> button:
         text_color,
         border: Border {
             width: 0.0,
-            radius: 8.0.into(),
+            radius: 6.0.into(),
             color: Color::TRANSPARENT,
         },
         shadow: Shadow::default(),
@@ -1620,7 +1620,7 @@ fn code_copy_button_style(_theme: &Theme, status: button::Status) -> button::Sty
         text_color: color_text(),
         border: Border {
             width: 1.0,
-            radius: 12.0.into(),
+            radius: 10.0.into(),
             color: color_border(),
         },
         shadow: Shadow::default(),
@@ -1640,7 +1640,7 @@ fn primary_action_button_style(accent: Color, status: button::Status) -> button:
         text_color: color_text(),
         border: Border {
             width: 0.0,
-            radius: 12.0.into(),
+            radius: 10.0.into(),
             color: Color::TRANSPARENT,
         },
         shadow: Shadow::default(),

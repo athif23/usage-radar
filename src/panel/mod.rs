@@ -6,8 +6,8 @@ use tray_icon::Rect;
 
 use crate::providers::ProviderKind;
 
-pub const WIDTH: f32 = 480.0;
-pub const HEIGHT: f32 = 720.0;
+pub const WIDTH: f32 = 360.0;
+pub const HEIGHT: f32 = 580.0;
 const EDGE_MARGIN: f32 = 8.0;
 
 #[derive(Debug, Clone)]
