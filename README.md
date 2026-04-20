@@ -8,10 +8,13 @@ It opens from the system tray and shows the current state of your Codex and GitH
 
 This project is built with Rust and [`iced`](https://github.com/iced-rs/iced). It is intentionally small, local-first, and honest about uncertainty.
 
+Part of the goal is also to avoid wasting resources on a tiny tray app. For this kind of utility, I wanted a native Rust UI stack instead of paying for a heavier web-style runtime.
+
 - no backend
 - no embedded browser app shell
 - no billing dashboard sprawl
 - no pretending partial data is exact
+- no full Chromium-style runtime for a small tray popup
 
 Usage Radar is an unofficial utility and is not affiliated with OpenAI or GitHub.
 
@@ -27,7 +30,7 @@ AI usage limits are spread across too many places:
 
 That creates daily friction.
 
-There are already apps in this space, but many of them are either built with Tauri or Electron, or only available as macOS apps. Usage Radar exists because I wanted a compact Windows-first app built directly with Rust and `iced`.
+There are already apps in this space, but many of them are either built with Tauri or Electron, or only available as macOS apps. Usage Radar exists because I wanted a compact Windows-first app built directly with Rust and `iced`, with less runtime overhead than shipping a full Chromium-style app shell for a tiny tray utility.
 
 Usage Radar is meant to feel like a small Windows utility you can pop open many times a day for a fast, trustworthy answer.
 
