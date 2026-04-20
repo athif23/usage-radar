@@ -514,6 +514,10 @@ impl App {
         for outcome in outcomes {
             if outcome.kind == ProviderKind::Copilot {
                 self.copilot_auth.awaiting_snapshot = false;
+
+                if !self.copilot_auth.has_saved_token {
+                    continue;
+                }
             }
 
             match outcome.result {
