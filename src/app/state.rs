@@ -63,6 +63,7 @@ pub struct RefreshState {
 
 #[derive(Debug, Clone, Default)]
 pub struct CopilotAuthState {
+    pub flow_id: u64,
     pub requesting: bool,
     pub has_saved_token: bool,
     pub device_code: Option<DeviceCodePrompt>,

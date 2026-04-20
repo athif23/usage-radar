@@ -83,10 +83,12 @@ impl App {
             Message::OpenCopilotVerification => self.open_copilot_verification(),
             Message::CopilotConnectRequested => self.start_copilot_sign_in(),
             Message::CopilotSignOutRequested => self.sign_out_copilot(),
-            Message::CopilotDeviceCodeReceived(result) => {
-                self.handle_copilot_device_code_received(result)
+            Message::CopilotDeviceCodeReceived(flow_id, result) => {
+                self.handle_copilot_device_code_received(flow_id, result)
             }
-            Message::CopilotSignInFinished(result) => self.handle_copilot_sign_in_finished(result),
+            Message::CopilotSignInFinished(flow_id, result) => {
+                self.handle_copilot_sign_in_finished(flow_id, result)
+            }
             Message::RefreshRequested(reason) => self.request_refresh(reason),
             Message::RefreshFinished(outcomes) => self.handle_refresh_finished(outcomes),
             Message::QuitRequested => iced::exit(),
@@ -337,20 +339,32 @@ impl App {
             return Task::none();
         }
 
+        self.copilot_auth.flow_id += 1;
+        let flow_id = self.copilot_auth.flow_id;
         self.copilot_auth.requesting = true;
         self.copilot_auth.device_code = None;
         self.copilot_auth.last_error = None;
 
         Task::perform(
-            crate::providers::copilot::request_device_code(),
-            Message::CopilotDeviceCodeReceived,
+            async move {
+                (
+                    flow_id,
+                    crate::providers::copilot::request_device_code().await,
+                )
+            },
+            |(flow_id, result)| Message::CopilotDeviceCodeReceived(flow_id, result),
         )
     }
 
     fn handle_copilot_device_code_received(
         &mut self,
+        flow_id: u64,
         result: Result<crate::providers::copilot::DeviceCodePrompt, String>,
     ) -> Task<Message> {
+        if flow_id != self.copilot_auth.flow_id {
+            return Task::none();
+        }
+
         self.copilot_auth.requesting = false;
 
         match result {
@@ -361,10 +375,15 @@ impl App {
 
                 Task::perform(
                     async move {
-                        let token = crate::providers::copilot::poll_for_token(&prompt).await?;
-                        crate::providers::copilot::store_token(&token)
+                        let result = async {
+                            let token = crate::providers::copilot::poll_for_token(&prompt).await?;
+                            crate::providers::copilot::store_token(&token)
+                        }
+                        .await;
+
+                        (flow_id, result)
                     },
-                    Message::CopilotSignInFinished,
+                    |(flow_id, result)| Message::CopilotSignInFinished(flow_id, result),
                 )
             }
             Err(error) => {
@@ -375,7 +394,15 @@ impl App {
         }
     }
 
-    fn handle_copilot_sign_in_finished(&mut self, result: Result<(), String>) -> Task<Message> {
+    fn handle_copilot_sign_in_finished(
+        &mut self,
+        flow_id: u64,
+        result: Result<(), String>,
+    ) -> Task<Message> {
+        if flow_id != self.copilot_auth.flow_id {
+            return Task::none();
+        }
+
         self.copilot_auth.requesting = false;
         self.copilot_auth.device_code = None;
 
@@ -394,6 +421,8 @@ impl App {
     }
 
     fn sign_out_copilot(&mut self) -> Task<Message> {
+        self.copilot_auth.flow_id += 1;
+
         match crate::providers::copilot::clear_token() {
             Ok(()) => {
                 self.copilot_auth.requesting = false;
@@ -719,15 +748,15 @@ impl App {
     }
 
     fn copilot_page_view(&self) -> Element<'_, Message> {
-        let mut body = column![
-            copilot_page_header(self.copilot_auth.has_saved_token),
-            provider_panel(
+        let mut body = column![copilot_page_header(self.copilot_auth.has_saved_token)].spacing(12);
+
+        if !self.copilot_auth.is_busy() {
+            body = body.push(provider_panel(
                 self.provider_card_model(ProviderKind::Copilot),
                 false,
-                false
-            ),
-        ]
-        .spacing(12);
+                false,
+            ));
+        }
 
         if self.copilot_auth.requesting {
             body = body.push(action_status_card(
@@ -973,7 +1002,7 @@ struct ProviderSection {
     title: String,
     progress: f32,
     leading: String,
-    trailing: String,
+    trailing: Option<String>,
     accent: Color,
 }
 
@@ -1113,17 +1142,24 @@ fn provider_panel_body(
 }
 
 fn provider_section(section: ProviderSection) -> Element<'static, Message> {
+    let footer: Element<'static, Message> = if let Some(trailing) = section.trailing {
+        row![
+            text(section.leading).size(12).color(color_text()),
+            horizontal_space(),
+            text(trailing).size(12).color(color_muted()),
+        ]
+        .align_y(Alignment::Center)
+        .into()
+    } else {
+        text(section.leading).size(12).color(color_text()).into()
+    };
+
     column![
         text(section.title).size(14).color(color_text()),
         progress_bar(0.0..=100.0, section.progress)
             .height(8)
             .style(move |_theme| progress_style(section.accent)),
-        row![
-            text(section.leading).size(12).color(color_text()),
-            horizontal_space(),
-            text(section.trailing).size(12).color(color_muted()),
-        ]
-        .align_y(Alignment::Center),
+        footer,
     ]
     .spacing(6)
     .into()
@@ -1330,9 +1366,8 @@ fn first_meaningful_note(snapshot: &ProviderSnapshot) -> Option<String> {
 fn snapshot_subtitle(snapshot: &ProviderSnapshot) -> Option<String> {
     if snapshot.stale {
         return match snapshot.confidence {
-            Confidence::Partial => Some("Last known snapshot · Partial data".to_string()),
             Confidence::Estimated => Some("Last known snapshot · Estimated".to_string()),
-            Confidence::Exact => Some("Last known snapshot".to_string()),
+            _ => Some("Last known snapshot".to_string()),
         };
     }
 
@@ -1341,9 +1376,8 @@ fn snapshot_subtitle(snapshot: &ProviderSnapshot) -> Option<String> {
     }
 
     match snapshot.confidence {
-        Confidence::Partial => Some("Partial data".to_string()),
         Confidence::Estimated => Some("Estimated".to_string()),
-        Confidence::Exact => None,
+        _ => None,
     }
 }
 
@@ -1361,12 +1395,10 @@ fn provider_failure_snapshot(kind: ProviderKind, error: &str) -> ProviderSnapsho
     }
 }
 
-fn format_reset_text(reset_at: Option<SystemTime>) -> String {
-    let Some(reset_at) = reset_at else {
-        return "Reset time unavailable".to_string();
-    };
+fn format_reset_text(reset_at: Option<SystemTime>) -> Option<String> {
+    let reset_at = reset_at?;
 
-    match reset_at.duration_since(SystemTime::now()) {
+    Some(match reset_at.duration_since(SystemTime::now()) {
         Ok(duration) if duration.as_secs() < 60 => "Resets in under 1m".to_string(),
         Ok(duration) if duration.as_secs() < 3_600 => {
             format!("Resets in {}m", duration.as_secs() / 60)
@@ -1376,7 +1408,7 @@ fn format_reset_text(reset_at: Option<SystemTime>) -> String {
         }
         Ok(duration) => format!("Resets in {}d", duration.as_secs() / 86_400),
         Err(_) => "Reset pending".to_string(),
-    }
+    })
 }
 
 #[derive(Clone, Copy)]
