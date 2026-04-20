@@ -83,13 +83,23 @@ pub fn settings(visible: bool, skip_taskbar: bool, position: Option<Point>) -> w
         transparent: false,
         level: window::Level::Normal,
         exit_on_close_request: false,
-        platform_specific: window::settings::PlatformSpecific {
-            skip_taskbar,
-            undecorated_shadow: false,
-            ..Default::default()
-        },
+        platform_specific: platform_settings(skip_taskbar),
         ..Default::default()
     }
+}
+
+#[cfg(target_os = "windows")]
+fn platform_settings(skip_taskbar: bool) -> window::settings::PlatformSpecific {
+    window::settings::PlatformSpecific {
+        skip_taskbar,
+        undecorated_shadow: false,
+        ..Default::default()
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn platform_settings(_skip_taskbar: bool) -> window::settings::PlatformSpecific {
+    window::settings::PlatformSpecific::default()
 }
 
 pub fn open_point(anchor: Option<Rect>, scale_factor: f32) -> Option<Point> {
