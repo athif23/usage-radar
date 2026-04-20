@@ -13,6 +13,7 @@ pub enum Message {
     OpenAbout,
     OpenConfigFolder,
     OpenCopilotVerification,
+    CopyCopilotCode,
     CopilotConnectRequested,
     CopilotSignOutRequested,
     CopilotDeviceCodeReceived(u64, Result<DeviceCodePrompt, String>),

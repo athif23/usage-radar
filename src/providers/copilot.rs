@@ -65,7 +65,7 @@ pub async fn fetch_snapshot() -> Result<ProviderSnapshot, String> {
     let mut detail_bars = Vec::new();
 
     if let Some(quota_snapshots) = usage.quota_snapshots {
-        if let Some(bar) = quota_bar("Premium interactions", quota_snapshots.premium_interactions) {
+        if let Some(bar) = quota_bar("Premium requests", quota_snapshots.premium_interactions) {
             detail_bars.push(bar);
         }
 

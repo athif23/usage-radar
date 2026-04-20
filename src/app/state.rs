@@ -65,6 +65,7 @@ pub struct RefreshState {
 pub struct CopilotAuthState {
     pub flow_id: u64,
     pub requesting: bool,
+    pub awaiting_snapshot: bool,
     pub has_saved_token: bool,
     pub device_code: Option<DeviceCodePrompt>,
     pub last_error: Option<String>,

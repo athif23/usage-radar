@@ -11,8 +11,8 @@ use iced::widget::{
     button, column, container, horizontal_space, progress_bar, row, scrollable, text,
 };
 use iced::{
-    alignment, event, keyboard, window, Alignment, Border, Color, Element, Event, Font, Length,
-    Padding, Shadow, Subscription, Task, Theme,
+    alignment, clipboard, event, keyboard, window, Alignment, Border, Color, Element, Event, Font,
+    Length, Padding, Shadow, Subscription, Task, Theme,
 };
 use lucide_icons::Icon as LucideIcon;
 use tray_icon::menu::MenuEvent;
@@ -81,6 +81,7 @@ impl App {
             }
             Message::OpenConfigFolder => self.open_config_folder(),
             Message::OpenCopilotVerification => self.open_copilot_verification(),
+            Message::CopyCopilotCode => self.copy_copilot_code(),
             Message::CopilotConnectRequested => self.start_copilot_sign_in(),
             Message::CopilotSignOutRequested => self.sign_out_copilot(),
             Message::CopilotDeviceCodeReceived(flow_id, result) => {
@@ -342,6 +343,7 @@ impl App {
         self.copilot_auth.flow_id += 1;
         let flow_id = self.copilot_auth.flow_id;
         self.copilot_auth.requesting = true;
+        self.copilot_auth.awaiting_snapshot = false;
         self.copilot_auth.device_code = None;
         self.copilot_auth.last_error = None;
 
@@ -408,11 +410,13 @@ impl App {
 
         match result {
             Ok(()) => {
+                self.copilot_auth.awaiting_snapshot = true;
                 self.copilot_auth.has_saved_token = true;
                 self.copilot_auth.last_error = None;
                 self.request_refresh(RefreshReason::Manual)
             }
             Err(error) => {
+                self.copilot_auth.awaiting_snapshot = false;
                 self.copilot_auth.has_saved_token = false;
                 self.copilot_auth.last_error = Some(error);
                 Task::none()
@@ -426,6 +430,7 @@ impl App {
         match crate::providers::copilot::clear_token() {
             Ok(()) => {
                 self.copilot_auth.requesting = false;
+                self.copilot_auth.awaiting_snapshot = false;
                 self.copilot_auth.has_saved_token = false;
                 self.copilot_auth.device_code = None;
                 self.copilot_auth.last_error = None;
@@ -452,6 +457,19 @@ impl App {
                 self.copilot_auth.last_error = Some(error);
             }
         }
+    }
+
+    fn copy_copilot_code(&mut self) -> Task<Message> {
+        let Some(code) = self
+            .copilot_auth
+            .device_code
+            .as_ref()
+            .map(|prompt| prompt.user_code.clone())
+        else {
+            return Task::none();
+        };
+
+        clipboard::write(code)
     }
 
     fn open_external_target(&mut self, target: &str, label: &str) -> Task<Message> {
@@ -494,6 +512,10 @@ impl App {
         let mut had_success = false;
 
         for outcome in outcomes {
+            if outcome.kind == ProviderKind::Copilot {
+                self.copilot_auth.awaiting_snapshot = false;
+            }
+
             match outcome.result {
                 Ok(snapshot) => {
                     had_success = true;
@@ -750,7 +772,12 @@ impl App {
     fn copilot_page_view(&self) -> Element<'_, Message> {
         let mut body = column![copilot_page_header(self.copilot_auth.has_saved_token)].spacing(12);
 
-        if !self.copilot_auth.is_busy() {
+        if self.copilot_auth.awaiting_snapshot {
+            body = body.push(action_status_card(
+                "Loading Copilot usage",
+                "GitHub sign-in succeeded. Fetching your Copilot usage...",
+            ));
+        } else if !self.copilot_auth.is_busy() {
             body = body.push(provider_panel(
                 self.provider_card_model(ProviderKind::Copilot),
                 false,
@@ -885,15 +912,15 @@ impl App {
                     accent,
                     subtitle: None,
                     sections: Vec::new(),
-                    headline: Some(if self.copilot_auth.is_busy() {
-                        "Finishing GitHub sign-in".to_string()
+                    headline: Some(if self.copilot_auth.is_busy() || self.copilot_auth.awaiting_snapshot {
+                        "Checking Copilot status".to_string()
                     } else if self.refresh.in_flight || self.copilot_auth.has_saved_token {
                         "Checking Copilot status".to_string()
                     } else {
                         "GitHub sign-in required".to_string()
                     }),
-                    detail: Some(if self.copilot_auth.is_busy() {
-                        "Finish the GitHub device flow to let Usage Radar fetch Copilot usage."
+                    detail: Some(if self.copilot_auth.is_busy() || self.copilot_auth.awaiting_snapshot {
+                        "Usage Radar is waiting for GitHub sign-in and the first Copilot usage refresh to finish."
                             .to_string()
                     } else if self.copilot_auth.has_saved_token {
                         "Usage Radar found a saved GitHub sign-in and is waiting for Copilot usage to refresh."
@@ -1206,17 +1233,22 @@ fn copilot_waiting_card(
             text("A browser tab should already be open. If not, open GitHub manually below and finish approval.")
                 .size(12)
                 .color(color_muted()),
-            container(text(prompt.user_code.clone()).size(20).color(color_text()))
-                .padding([10, 12])
-                .style(|_theme| iced::widget::container::Style {
-                    background: Some(surface_shell().into()),
-                    border: Border {
-                        width: 1.0,
-                        radius: 12.0.into(),
-                        color: color_border(),
-                    },
-                    ..Default::default()
-                }),
+            row![
+                container(text(prompt.user_code.clone()).size(20).color(color_text()))
+                    .padding([10, 12])
+                    .style(|_theme| iced::widget::container::Style {
+                        background: Some(surface_shell().into()),
+                        border: Border {
+                            width: 1.0,
+                            radius: 12.0.into(),
+                            color: color_border(),
+                        },
+                        ..Default::default()
+                    }),
+                code_copy_button(Message::CopyCopilotCode),
+            ]
+            .spacing(8)
+            .align_y(Alignment::Center),
             text(prompt.verification_uri.clone())
                 .size(12)
                 .color(color_muted()),
@@ -1255,15 +1287,32 @@ fn inline_action_button(
         row![
             text(char::from(icon).to_string())
                 .font(Font::with_name("lucide"))
-                .size(15)
-                .color(color_text()),
-            text(label).size(12).color(color_text()),
+                .size(15),
+            text(label).size(12),
         ]
         .spacing(6)
         .align_y(Alignment::Center),
     )
     .padding([4, 0])
     .style(inline_action_button_style)
+    .on_press(message)
+}
+
+fn code_copy_button(message: Message) -> iced::widget::Button<'static, Message> {
+    button(
+        container(
+            text(char::from(LucideIcon::Copy).to_string())
+                .font(Font::with_name("lucide"))
+                .size(16)
+                .color(color_text()),
+        )
+        .width(Length::Fixed(42.0))
+        .height(Length::Fixed(42.0))
+        .align_x(alignment::Horizontal::Center)
+        .align_y(alignment::Vertical::Center),
+    )
+    .padding(0)
+    .style(code_copy_button_style)
     .on_press(message)
 }
 
@@ -1514,19 +1563,37 @@ fn toolbar_icon_button_style(_theme: &Theme, status: button::Status) -> button::
 }
 
 fn inline_action_button_style(_theme: &Theme, status: button::Status) -> button::Style {
+    let text_color = match status {
+        button::Status::Hovered | button::Status::Pressed => color_text(),
+        button::Status::Disabled | button::Status::Active => color_muted(),
+    };
+
+    button::Style {
+        background: Some(Color::TRANSPARENT.into()),
+        text_color,
+        border: Border {
+            width: 0.0,
+            radius: 8.0.into(),
+            color: Color::TRANSPARENT,
+        },
+        shadow: Shadow::default(),
+    }
+}
+
+fn code_copy_button_style(_theme: &Theme, status: button::Status) -> button::Style {
     let background = match status {
-        button::Status::Hovered => Color::from_rgba8(255, 255, 255, 0.04),
-        button::Status::Pressed => Color::from_rgba8(255, 255, 255, 0.08),
-        button::Status::Disabled | button::Status::Active => Color::TRANSPARENT,
+        button::Status::Hovered => Color::from_rgba8(255, 255, 255, 0.06),
+        button::Status::Pressed => Color::from_rgba8(255, 255, 255, 0.10),
+        button::Status::Disabled | button::Status::Active => surface_shell(),
     };
 
     button::Style {
         background: Some(background.into()),
         text_color: color_text(),
         border: Border {
-            width: 0.0,
-            radius: 8.0.into(),
-            color: Color::TRANSPARENT,
+            width: 1.0,
+            radius: 12.0.into(),
+            color: color_border(),
         },
         shadow: Shadow::default(),
     }
