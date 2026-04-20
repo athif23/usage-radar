@@ -50,6 +50,7 @@ impl App {
             iced::time::every(Duration::from_millis(75)).map(|_| Message::Tick),
             window::close_requests().map(Message::PanelCloseRequested),
             window::close_events().map(Message::PanelClosed),
+            event::listen_with(handle_panel_focus_event),
         ];
 
         if self.config.refresh_minutes > 0 {
@@ -75,6 +76,7 @@ impl App {
                 Task::none()
             }
             Message::StartPanelDrag => self.start_panel_drag(),
+            Message::PanelFocusChanged(id, focused) => self.handle_panel_focus_changed(id, focused),
             Message::SelectPage(selected_provider) => self.handle_select_page(selected_provider),
             Message::OpenAbout => {
                 self.panel.show_about = true;
@@ -120,6 +122,8 @@ impl App {
                 if self.panel.id == Some(id) {
                     self.panel.id = None;
                     self.panel.visible = false;
+                    self.panel.has_focus = false;
+                    self.panel.last_unfocused_at = None;
                 }
 
                 Task::none()
@@ -223,6 +227,8 @@ impl App {
 
     fn handle_panel_opened(&mut self, id: window::Id) -> Task<Message> {
         self.panel.id = Some(id);
+        self.panel.has_focus = self.panel.visible;
+        self.panel.last_unfocused_at = None;
 
         window::get_scale_factor(id)
             .map(move |scale_factor| Message::PanelScaleFactorLoaded(id, scale_factor))
@@ -293,6 +299,14 @@ impl App {
         } else {
             None
         }
+    }
+
+    fn handle_panel_focus_changed(&mut self, id: window::Id, focused: bool) -> Task<Message> {
+        if self.panel.id == Some(id) {
+            self.panel.note_focus_changed(focused);
+        }
+
+        Task::none()
     }
 
     fn handle_select_page(&mut self, selected_provider: Option<ProviderKind>) -> Task<Message> {
@@ -643,7 +657,11 @@ impl App {
 
     fn toggle_panel(&mut self) -> Task<Message> {
         if self.panel.visible {
-            self.hide_panel()
+            if self.panel.was_recently_active() {
+                self.hide_panel()
+            } else {
+                self.show_panel()
+            }
         } else {
             self.show_panel()
         }
@@ -654,6 +672,8 @@ impl App {
 
         if let Some(id) = self.panel.id {
             self.panel.visible = true;
+            self.panel.has_focus = true;
+            self.panel.last_unfocused_at = None;
 
             let mut task = Task::none();
 
@@ -684,6 +704,8 @@ impl App {
         };
 
         self.panel.visible = false;
+        self.panel.has_focus = false;
+        self.panel.last_unfocused_at = None;
         window::change_mode(id, window::Mode::Hidden)
     }
 
@@ -1074,6 +1096,18 @@ fn handle_escape_key(event: Event, _status: event::Status, window: window::Id) -
             }
             _ => None,
         },
+        _ => None,
+    }
+}
+
+fn handle_panel_focus_event(
+    event: Event,
+    _status: event::Status,
+    window: window::Id,
+) -> Option<Message> {
+    match event {
+        Event::Window(window::Event::Focused) => Some(Message::PanelFocusChanged(window, true)),
+        Event::Window(window::Event::Unfocused) => Some(Message::PanelFocusChanged(window, false)),
         _ => None,
     }
 }

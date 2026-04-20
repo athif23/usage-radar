@@ -10,6 +10,7 @@ pub enum Message {
     Tick,
     PanelScrolled,
     StartPanelDrag,
+    PanelFocusChanged(window::Id, bool),
     SelectPage(Option<ProviderKind>),
     OpenAbout,
     OpenConfigFolder,

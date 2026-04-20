@@ -14,6 +14,8 @@ const EDGE_MARGIN: f32 = 8.0;
 pub struct State {
     pub id: Option<window::Id>,
     pub visible: bool,
+    pub has_focus: bool,
+    pub last_unfocused_at: Option<Instant>,
     pub scale_factor: f32,
     pub anchor: Option<Rect>,
     pub selected_provider: Option<ProviderKind>,
@@ -26,6 +28,8 @@ impl Default for State {
         Self {
             id: None,
             visible: false,
+            has_focus: false,
+            last_unfocused_at: None,
             scale_factor: 1.0,
             anchor: None,
             selected_provider: None,
@@ -38,6 +42,24 @@ impl Default for State {
 impl State {
     pub fn note_scrolled(&mut self) {
         self.last_scrolled_at = Some(Instant::now());
+    }
+
+    pub fn note_focus_changed(&mut self, focused: bool) {
+        self.has_focus = focused;
+
+        if focused {
+            self.last_unfocused_at = None;
+        } else {
+            self.last_unfocused_at = Some(Instant::now());
+        }
+    }
+
+    pub fn was_recently_active(&self) -> bool {
+        self.has_focus
+            || self
+                .last_unfocused_at
+                .map(|last| last.elapsed() <= Duration::from_millis(250))
+                .unwrap_or(false)
     }
 
     pub fn scrollbar_is_active(&self) -> bool {
