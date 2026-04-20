@@ -2,6 +2,9 @@
 name = "usage-radar"
 version = "0.1.0"
 edition = "2021"
+description = "Tray-first Windows desktop app for checking Codex and GitHub Copilot usage quickly"
+readme = "README.md"
+license = "MIT"
 
 [dependencies]
 dirs = "6"

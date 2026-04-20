@@ -1,0 +1,85 @@
+name: release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  windows-release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo build output
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release binary
+        run: cargo build --release --locked
+
+      - name: Name artifact
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            $suffix = "${{ github.ref_name }}"
+          } else {
+            $suffix = "manual-${{ github.run_number }}"
+          }
+
+          $artifactName = "usage-radar-$suffix-windows-x64"
+          "ARTIFACT_NAME=$artifactName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Package release archive
+        shell: pwsh
+        run: |
+          $stage = Join-Path $PWD $env:ARTIFACT_NAME
+          $archive = Join-Path $PWD "$($env:ARTIFACT_NAME).zip"
+          $checksum = Join-Path $PWD "$($env:ARTIFACT_NAME).zip.sha256"
+
+          if (Test-Path $stage) {
+            Remove-Item $stage -Recurse -Force
+          }
+
+          if (Test-Path $archive) {
+            Remove-Item $archive -Force
+          }
+
+          if (Test-Path $checksum) {
+            Remove-Item $checksum -Force
+          }
+
+          New-Item -ItemType Directory -Path $stage | Out-Null
+          Copy-Item target/release/usage-radar.exe $stage
+          Copy-Item README.md $stage
+          Copy-Item LICENSE $stage
+
+          Compress-Archive -Path "$stage/*" -DestinationPath $archive -Force
+
+          $hash = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLower()
+          "$hash *$($env:ARTIFACT_NAME).zip" | Out-File -FilePath $checksum -Encoding ascii
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: |
+            ${{ env.ARTIFACT_NAME }}.zip
+            ${{ env.ARTIFACT_NAME }}.zip.sha256
+
+      - name: Publish GitHub release assets
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.ARTIFACT_NAME }}.zip
+            ${{ env.ARTIFACT_NAME }}.zip.sha256
+          fail_on_unmatched_files: true
+          generate_release_notes: true
