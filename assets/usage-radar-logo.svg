@@ -1,0 +1,18 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="usage-radar-logo-title usage-radar-logo-desc">
+  <title id="usage-radar-logo-title">Usage Radar logo</title>
+  <desc id="usage-radar-logo-desc">A dark circular radar-style gauge with a green upper arc, center hub, and right-facing sweep line.</desc>
+
+  <circle cx="256" cy="256" r="224" fill="#0B111D"/>
+  <circle cx="256" cy="256" r="224" stroke="#1A2333" stroke-width="8"/>
+
+  <path
+    d="M122 256C122 182.006 182.006 122 256 122C329.994 122 390 182.006 390 256"
+    stroke="#4CC08E"
+    stroke-width="34"
+    stroke-linecap="round"
+  />
+
+  <circle cx="256" cy="256" r="34" fill="#4CC08E"/>
+
+  <rect x="256" y="241" width="148" height="30" rx="15" fill="#4CC08E"/>
+</svg>

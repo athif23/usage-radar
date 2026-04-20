@@ -1,6 +1,15 @@
+<p align="center">
+  <img src="assets/usage-radar-logo.svg" alt="Usage Radar logo" width="132" />
+</p>
+
 # Usage Radar
 
 Usage Radar is a tray-first Windows desktop app for checking AI usage limits quickly.
+
+
+<p align="left">
+  <img src="assets/image.png" alt="Usage Radar app screenshot" width="480" />
+</p>
 
 It opens from the system tray and shows the current state of your Codex and GitHub Copilot usage in a compact popup, so you can answer a simple question fast:
 
