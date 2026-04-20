@@ -48,7 +48,7 @@ pub async fn fetch_snapshot() -> Result<ProviderSnapshot, String> {
     match response.status() {
         reqwest::StatusCode::UNAUTHORIZED | reqwest::StatusCode::FORBIDDEN => {
             return Ok(disconnected_snapshot(
-                "GitHub sign-in expired. Sign in again to reconnect Copilot.",
+                "Saved GitHub sign-in expired. Sign out, then sign in again to reconnect Copilot.",
             ));
         }
         status if !status.is_success() => {
@@ -234,7 +234,10 @@ pub fn store_token(token: &str) -> Result<(), String> {
         })
 }
 
-#[allow(dead_code)]
+pub fn has_saved_token() -> Result<bool, String> {
+    Ok(load_token()?.is_some())
+}
+
 pub fn clear_token() -> Result<(), String> {
     let entry = credential_entry()?;
 

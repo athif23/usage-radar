@@ -14,6 +14,7 @@ pub enum Message {
     OpenConfigFolder,
     OpenCopilotVerification,
     CopilotConnectRequested,
+    CopilotSignOutRequested,
     CopilotDeviceCodeReceived(Result<DeviceCodePrompt, String>),
     CopilotSignInFinished(Result<(), String>),
     RefreshRequested(RefreshReason),

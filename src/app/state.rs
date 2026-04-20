@@ -64,6 +64,7 @@ pub struct RefreshState {
 #[derive(Debug, Clone, Default)]
 pub struct CopilotAuthState {
     pub requesting: bool,
+    pub has_saved_token: bool,
     pub device_code: Option<DeviceCodePrompt>,
     pub last_error: Option<String>,
 }

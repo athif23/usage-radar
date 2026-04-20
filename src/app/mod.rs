@@ -82,6 +82,7 @@ impl App {
             Message::OpenConfigFolder => self.open_config_folder(),
             Message::OpenCopilotVerification => self.open_copilot_verification(),
             Message::CopilotConnectRequested => self.start_copilot_sign_in(),
+            Message::CopilotSignOutRequested => self.sign_out_copilot(),
             Message::CopilotDeviceCodeReceived(result) => {
                 self.handle_copilot_device_code_received(result)
             }
@@ -164,6 +165,8 @@ impl App {
     }
 
     fn handle_app_started(&mut self) -> Task<Message> {
+        self.sync_copilot_saved_token_state();
+
         let tray_ready = self.initialize_tray();
         let start_visible = !self.config.start_in_tray || !tray_ready;
         let skip_taskbar = tray_ready && self.config.start_in_tray;
@@ -330,7 +333,7 @@ impl App {
     }
 
     fn start_copilot_sign_in(&mut self) -> Task<Message> {
-        if self.copilot_auth.is_busy() {
+        if self.copilot_auth.is_busy() || self.copilot_auth.has_saved_token {
             return Task::none();
         }
 
@@ -378,12 +381,46 @@ impl App {
 
         match result {
             Ok(()) => {
+                self.copilot_auth.has_saved_token = true;
                 self.copilot_auth.last_error = None;
                 self.request_refresh(RefreshReason::Manual)
             }
             Err(error) => {
+                self.copilot_auth.has_saved_token = false;
                 self.copilot_auth.last_error = Some(error);
                 Task::none()
+            }
+        }
+    }
+
+    fn sign_out_copilot(&mut self) -> Task<Message> {
+        match crate::providers::copilot::clear_token() {
+            Ok(()) => {
+                self.copilot_auth.requesting = false;
+                self.copilot_auth.has_saved_token = false;
+                self.copilot_auth.device_code = None;
+                self.copilot_auth.last_error = None;
+                self.cache
+                    .providers
+                    .retain(|snapshot| snapshot.kind != ProviderKind::Copilot);
+                self.persist_cache();
+            }
+            Err(error) => {
+                self.copilot_auth.last_error = Some(error);
+            }
+        }
+
+        Task::none()
+    }
+
+    fn sync_copilot_saved_token_state(&mut self) {
+        match crate::providers::copilot::has_saved_token() {
+            Ok(has_saved_token) => {
+                self.copilot_auth.has_saved_token = has_saved_token;
+            }
+            Err(error) => {
+                self.copilot_auth.has_saved_token = false;
+                self.copilot_auth.last_error = Some(error);
             }
         }
     }
@@ -675,17 +712,21 @@ impl App {
             return self.copilot_page_view();
         }
 
-        container(column![provider_panel(self.provider_card_model(kind), false)].spacing(10))
+        container(column![provider_panel(self.provider_card_model(kind), false, true)].spacing(10))
             .width(Length::Fill)
             .padding(Padding::ZERO.top(10.0).left(10.0).right(10.0))
             .into()
     }
 
     fn copilot_page_view(&self) -> Element<'_, Message> {
-        let mut body = column![provider_panel(
-            self.provider_card_model(ProviderKind::Copilot),
-            false
-        )]
+        let mut body = column![
+            copilot_page_header(self.copilot_auth.has_saved_token),
+            provider_panel(
+                self.provider_card_model(ProviderKind::Copilot),
+                false,
+                false
+            ),
+        ]
         .spacing(12);
 
         if self.copilot_auth.requesting {
@@ -817,13 +858,16 @@ impl App {
                     sections: Vec::new(),
                     headline: Some(if self.copilot_auth.is_busy() {
                         "Finishing GitHub sign-in".to_string()
-                    } else if self.refresh.in_flight {
+                    } else if self.refresh.in_flight || self.copilot_auth.has_saved_token {
                         "Checking Copilot status".to_string()
                     } else {
                         "GitHub sign-in required".to_string()
                     }),
                     detail: Some(if self.copilot_auth.is_busy() {
                         "Finish the GitHub device flow to let Usage Radar fetch Copilot usage."
+                            .to_string()
+                    } else if self.copilot_auth.has_saved_token {
+                        "Usage Radar found a saved GitHub sign-in and is waiting for Copilot usage to refresh."
                             .to_string()
                     } else {
                         "Use the Copilot page to sign in with GitHub before Usage Radar reads Copilot usage."
@@ -892,14 +936,7 @@ impl App {
     }
 
     fn should_show_copilot_connect_button(&self) -> bool {
-        if self.copilot_auth.is_busy() {
-            return false;
-        }
-
-        match self.snapshot(ProviderKind::Copilot) {
-            Some(snapshot) => snapshot.unavailable || snapshot.detail_bars.is_empty(),
-            None => true,
-        }
+        !self.copilot_auth.is_busy() && !self.copilot_auth.has_saved_token
     }
 
     fn notice_text(&self) -> Option<String> {
@@ -1024,11 +1061,37 @@ fn tab_icon_handle(icon: TabIcon) -> svg::Handle {
 }
 
 fn provider_card(model: ProviderCardModel) -> Element<'static, Message> {
-    provider_panel(model, true)
+    provider_panel(model, true, true)
 }
 
-fn provider_panel(model: ProviderCardModel, framed: bool) -> Element<'static, Message> {
-    let mut body = column![text(model.title).size(17).color(color_text())].spacing(8);
+fn provider_panel(
+    model: ProviderCardModel,
+    framed: bool,
+    show_title: bool,
+) -> Element<'static, Message> {
+    let accent = model.accent;
+    let body = provider_panel_body(model, show_title);
+
+    if framed {
+        container(body)
+            .width(Length::Fill)
+            .padding(14)
+            .style(move |_theme| provider_card_style(accent))
+            .into()
+    } else {
+        container(body).width(Length::Fill).padding([2, 2]).into()
+    }
+}
+
+fn provider_panel_body(
+    model: ProviderCardModel,
+    show_title: bool,
+) -> iced::widget::Column<'static, Message> {
+    let mut body = column!().spacing(8);
+
+    if show_title {
+        body = body.push(text(model.title).size(17).color(color_text()));
+    }
 
     if let Some(subtitle) = model.subtitle {
         body = body.push(text(subtitle).size(12).color(color_muted()));
@@ -1046,15 +1109,7 @@ fn provider_panel(model: ProviderCardModel, framed: bool) -> Element<'static, Me
         body = body.push(provider_section(section));
     }
 
-    if framed {
-        container(body)
-            .width(Length::Fill)
-            .padding(14)
-            .style(move |_theme| provider_card_style(model.accent))
-            .into()
-    } else {
-        container(body).width(Length::Fill).padding([2, 2]).into()
-    }
+    body
 }
 
 fn provider_section(section: ProviderSection) -> Element<'static, Message> {
@@ -1072,6 +1127,24 @@ fn provider_section(section: ProviderSection) -> Element<'static, Message> {
     ]
     .spacing(6)
     .into()
+}
+
+fn copilot_page_header(has_saved_token: bool) -> Element<'static, Message> {
+    let mut header = row![text("Copilot").size(17).color(color_text())]
+        .align_y(Alignment::Center)
+        .width(Length::Fill);
+
+    header = header.push(horizontal_space());
+
+    if has_saved_token {
+        header = header.push(inline_action_button(
+            LucideIcon::LogOut,
+            "Sign out",
+            Message::CopilotSignOutRequested,
+        ));
+    }
+
+    column![header, divider_line()].spacing(10).into()
 }
 
 fn action_status_card(title: &'static str, detail: &str) -> Element<'static, Message> {
@@ -1135,6 +1208,27 @@ fn primary_action_button(
         .padding([10, 12])
         .style(move |_theme, status| primary_action_button_style(accent, status))
         .on_press(message)
+}
+
+fn inline_action_button(
+    icon: LucideIcon,
+    label: &'static str,
+    message: Message,
+) -> iced::widget::Button<'static, Message> {
+    button(
+        row![
+            text(char::from(icon).to_string())
+                .font(Font::with_name("lucide"))
+                .size(15)
+                .color(color_text()),
+            text(label).size(12).color(color_text()),
+        ]
+        .spacing(6)
+        .align_y(Alignment::Center),
+    )
+    .padding([4, 0])
+    .style(inline_action_button_style)
+    .on_press(message)
 }
 
 fn toolbar_icon_button(
@@ -1381,6 +1475,25 @@ fn toolbar_icon_button_style(_theme: &Theme, status: button::Status) -> button::
         border: Border {
             width: 0.0,
             radius: 999.0.into(),
+            color: Color::TRANSPARENT,
+        },
+        shadow: Shadow::default(),
+    }
+}
+
+fn inline_action_button_style(_theme: &Theme, status: button::Status) -> button::Style {
+    let background = match status {
+        button::Status::Hovered => Color::from_rgba8(255, 255, 255, 0.04),
+        button::Status::Pressed => Color::from_rgba8(255, 255, 255, 0.08),
+        button::Status::Disabled | button::Status::Active => Color::TRANSPARENT,
+    };
+
+    button::Style {
+        background: Some(background.into()),
+        text_color: color_text(),
+        border: Border {
+            width: 0.0,
+            radius: 8.0.into(),
             color: Color::TRANSPARENT,
         },
         shadow: Shadow::default(),
