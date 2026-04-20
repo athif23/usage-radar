@@ -496,7 +496,7 @@ impl App {
     }
 
     fn open_external_target(&mut self, target: &str, label: &str) -> Task<Message> {
-        match Command::new("explorer").arg(target).spawn() {
+        match spawn_open_target(target) {
             Ok(_) => {
                 if self.runtime_notice == self.tray.init_error {
                     self.runtime_notice = None;
@@ -1110,6 +1110,21 @@ fn handle_panel_focus_event(
         Event::Window(window::Event::Unfocused) => Some(Message::PanelFocusChanged(window, false)),
         _ => None,
     }
+}
+
+#[cfg(target_os = "windows")]
+fn spawn_open_target(target: &str) -> std::io::Result<std::process::Child> {
+    Command::new("explorer").arg(target).spawn()
+}
+
+#[cfg(target_os = "macos")]
+fn spawn_open_target(target: &str) -> std::io::Result<std::process::Child> {
+    Command::new("open").arg(target).spawn()
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn spawn_open_target(target: &str) -> std::io::Result<std::process::Child> {
+    Command::new("xdg-open").arg(target).spawn()
 }
 
 fn page_tab_button(

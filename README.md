@@ -5,7 +5,7 @@
 <h1 align="center">Usage Radar</h1>
 
 <p align="center">
-  A small Windows tray app for checking AI usage limits without opening dashboards, browser tabs, or account pages.
+  A small tray app for checking AI usage limits without opening dashboards, browser tabs, or account pages.
 </p>
 
 <p align="center">
@@ -25,6 +25,8 @@
 </p>
 
 Usage Radar is a tray-first desktop app for people who use tools like Codex and GitHub Copilot and want to know, quickly, what is safe to use right now.
+
+Today it is tested properly on Windows, with macOS and Linux as follow-up targets.
 
 Instead of bouncing between dashboards, auth files, and account pages, you open the tray popup and check your remaining budget in a couple of seconds.
 
