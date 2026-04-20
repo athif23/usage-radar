@@ -641,18 +641,20 @@ impl App {
             return;
         };
 
-        snapshot.stale = true;
-        snapshot
-            .notes
-            .retain(|note| !note.starts_with("Refresh error:"));
-        snapshot.notes.insert(0, format!("Refresh error: {error}"));
-
         let too_old = SystemTime::now()
             .duration_since(snapshot.fetched_at)
             .map(|age| age > STALE_GRACE)
             .unwrap_or(false);
 
+        snapshot.stale = true;
         snapshot.unavailable = too_old;
+        snapshot.notes.retain(|note| {
+            !note.starts_with(DISPLAY_NOTE_PREFIX) && !note.starts_with(TECHNICAL_DETAIL_PREFIX)
+        });
+        snapshot.notes.insert(0, technical_detail_note(error));
+        snapshot
+            .notes
+            .insert(0, display_note(refresh_failure_message(kind, too_old)));
     }
 
     fn toggle_panel(&mut self) -> Task<Message> {
@@ -990,7 +992,7 @@ impl App {
                 accent,
                 subtitle: snapshot_subtitle(snapshot),
                 sections: Vec::new(),
-                headline: Some("No trustworthy value available".to_string()),
+                headline: Some("Usage temporarily unavailable".to_string()),
                 detail: Some(first_meaningful_note(snapshot).unwrap_or_else(|| {
                     "The provider is expected, but no reliable snapshot is available yet."
                         .to_string()
@@ -1470,13 +1472,19 @@ fn section_label(kind: ProviderKind, label: &str) -> String {
     }
 }
 
+const DISPLAY_NOTE_PREFIX: &str = "Display note:";
+const TECHNICAL_DETAIL_PREFIX: &str = "Technical detail:";
+
 fn first_meaningful_note(snapshot: &ProviderSnapshot) -> Option<String> {
-    snapshot
-        .notes
-        .iter()
-        .find(|note| !note.starts_with("Plan:"))
-        .cloned()
-        .or_else(|| snapshot.notes.first().cloned())
+    snapshot.notes.iter().find_map(|note| {
+        if let Some(display_note) = note.strip_prefix(DISPLAY_NOTE_PREFIX) {
+            Some(display_note.trim_start().to_string())
+        } else if note.starts_with("Plan:") || note.starts_with(TECHNICAL_DETAIL_PREFIX) {
+            None
+        } else {
+            Some(note.clone())
+        }
+    })
 }
 
 fn snapshot_subtitle(snapshot: &ProviderSnapshot) -> Option<String> {
@@ -1507,8 +1515,29 @@ fn provider_failure_snapshot(kind: ProviderKind, error: &str) -> ProviderSnapsho
         unavailable: true,
         summary_bar: None,
         detail_bars: Vec::new(),
-        notes: vec![format!("Refresh error: {error}")],
+        notes: vec![
+            display_note(refresh_failure_message(kind, true)),
+            technical_detail_note(error),
+        ],
     }
+}
+
+fn refresh_failure_message(kind: ProviderKind, unavailable: bool) -> String {
+    let provider = provider_ui_label(kind);
+
+    if unavailable {
+        format!("Couldn't load {provider} usage right now. Try again in a moment.")
+    } else {
+        format!("Couldn't refresh {provider} right now. Showing the last known snapshot.")
+    }
+}
+
+fn display_note(note: String) -> String {
+    format!("{DISPLAY_NOTE_PREFIX} {note}")
+}
+
+fn technical_detail_note(error: &str) -> String {
+    format!("{TECHNICAL_DETAIL_PREFIX} {error}")
 }
 
 fn format_reset_text(reset_at: Option<SystemTime>) -> Option<String> {
