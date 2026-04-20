@@ -9,6 +9,7 @@ pub enum Message {
     AppStarted,
     Tick,
     PanelScrolled,
+    StartPanelDrag,
     SelectPage(Option<ProviderKind>),
     OpenAbout,
     OpenConfigFolder,

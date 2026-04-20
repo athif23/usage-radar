@@ -12,4 +12,5 @@ tray-icon = "0.21"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 keyring = { version = "3.6", default-features = false, features = ["windows-native"] }
 tokio = { version = "1", features = ["time"] }
+windows-sys = { version = "0.60", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
 lucide-icons = { version = "1.8", features = ["iced"] }

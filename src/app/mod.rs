@@ -8,7 +8,7 @@ use std::time::{Duration, SystemTime};
 
 use iced::widget::svg;
 use iced::widget::{
-    button, column, container, horizontal_space, progress_bar, row, scrollable, text,
+    button, column, container, horizontal_space, mouse_area, progress_bar, row, scrollable, text,
 };
 use iced::{
     alignment, clipboard, event, keyboard, window, Alignment, Border, Color, Element, Event, Font,
@@ -74,6 +74,7 @@ impl App {
                 self.panel.note_scrolled();
                 Task::none()
             }
+            Message::StartPanelDrag => self.start_panel_drag(),
             Message::SelectPage(selected_provider) => self.handle_select_page(selected_provider),
             Message::OpenAbout => {
                 self.panel.show_about = true;
@@ -300,6 +301,14 @@ impl App {
         self.config.selected_provider = selected_provider;
         self.persist_config();
         Task::none()
+    }
+
+    fn start_panel_drag(&mut self) -> Task<Message> {
+        let Some(id) = self.panel.id else {
+            return Task::none();
+        };
+
+        window::drag(id)
     }
 
     fn open_config_folder(&mut self) -> Task<Message> {
@@ -683,9 +692,7 @@ impl App {
     }
 
     fn panel_anchor_point(&self) -> Option<iced::Point> {
-        self.panel
-            .anchor
-            .map(|rect| crate::panel::anchor_point(rect, self.panel.scale_factor))
+        crate::panel::open_point(self.panel.anchor, self.panel.scale_factor)
     }
 
     fn top_tabs_view(&self) -> Element<'_, Message> {
@@ -739,7 +746,9 @@ impl App {
         .spacing(6)
         .align_y(Alignment::Start);
 
-        column![tabs, divider_line()].spacing(6).into()
+        column![drag_strip_view(), tabs, divider_line()]
+            .spacing(6)
+            .into()
     }
 
     fn page_content_view(&self) -> Element<'_, Message> {
@@ -1064,6 +1073,16 @@ fn handle_escape_key(event: Event, _status: event::Status, window: window::Id) -
     }
 }
 
+fn drag_strip_view() -> Element<'static, Message> {
+    mouse_area(
+        container(text(""))
+            .width(Length::Fill)
+            .height(Length::Fixed(14.0)),
+    )
+    .on_press(Message::StartPanelDrag)
+    .into()
+}
+
 fn page_tab_button(
     label: &'static str,
     icon: TabIcon,
@@ -1370,7 +1389,7 @@ fn provider_sections(kind: ProviderKind, snapshot: &ProviderSnapshot) -> Vec<Pro
             .map(|bar| ProviderSection {
                 title: section_label(kind, &bar.label),
                 progress: bar.percent_left.clamp(0.0, 100.0),
-                leading: format!("{:.0}% left", bar.percent_left),
+                leading: format_percent_left(bar.percent_left),
                 trailing: format_reset_text(bar.reset_at),
                 accent: provider_accent(kind),
             })
@@ -1379,7 +1398,7 @@ fn provider_sections(kind: ProviderKind, snapshot: &ProviderSnapshot) -> Vec<Pro
         vec![ProviderSection {
             title: section_label(kind, &bar.label),
             progress: bar.percent_left.clamp(0.0, 100.0),
-            leading: format!("{:.0}% left", bar.percent_left),
+            leading: format_percent_left(bar.percent_left),
             trailing: format_reset_text(bar.reset_at),
             accent: provider_accent(kind),
         }]
@@ -1462,6 +1481,16 @@ fn format_reset_text(reset_at: Option<SystemTime>) -> Option<String> {
         Ok(duration) => format!("Resets in {}d", duration.as_secs() / 86_400),
         Err(_) => "Reset pending".to_string(),
     })
+}
+
+fn format_percent_left(percent_left: f32) -> String {
+    let rounded = (percent_left * 10.0).round() / 10.0;
+
+    if (rounded - rounded.round()).abs() < 0.05 {
+        format!("{rounded:.0}% left")
+    } else {
+        format!("{rounded:.1}% left")
+    }
 }
 
 #[derive(Clone, Copy)]
