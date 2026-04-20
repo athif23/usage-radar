@@ -26,6 +26,7 @@ jobs:
         run: cargo build --release --locked
 
       - name: Name artifact
+        id: artifact
         shell: pwsh
         run: |
           if ("${{ github.ref_type }}" -eq "tag") {
@@ -35,14 +36,15 @@ jobs:
           }
 
           $artifactName = "usage-radar-$suffix-windows-x64"
-          "ARTIFACT_NAME=$artifactName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "name=$artifactName" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Package release archive
         shell: pwsh
         run: |
-          $stage = Join-Path $PWD $env:ARTIFACT_NAME
-          $archive = Join-Path $PWD "$($env:ARTIFACT_NAME).zip"
-          $checksum = Join-Path $PWD "$($env:ARTIFACT_NAME).zip.sha256"
+          $artifactName = "${{ steps.artifact.outputs.name }}"
+          $stage = Join-Path $PWD $artifactName
+          $archive = Join-Path $PWD "$artifactName.zip"
+          $checksum = Join-Path $PWD "$artifactName.zip.sha256"
 
           if (Test-Path $stage) {
             Remove-Item $stage -Recurse -Force
@@ -64,22 +66,22 @@ jobs:
           Compress-Archive -Path "$stage/*" -DestinationPath $archive -Force
 
           $hash = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLower()
-          "$hash *$($env:ARTIFACT_NAME).zip" | Out-File -FilePath $checksum -Encoding ascii
+          "$hash *$artifactName.zip" | Out-File -FilePath $checksum -Encoding ascii
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ARTIFACT_NAME }}
+          name: ${{ steps.artifact.outputs.name }}
           path: |
-            ${{ env.ARTIFACT_NAME }}.zip
-            ${{ env.ARTIFACT_NAME }}.zip.sha256
+            ${{ steps.artifact.outputs.name }}.zip
+            ${{ steps.artifact.outputs.name }}.zip.sha256
 
       - name: Publish GitHub release assets
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ${{ env.ARTIFACT_NAME }}.zip
-            ${{ env.ARTIFACT_NAME }}.zip.sha256
+            ${{ steps.artifact.outputs.name }}.zip
+            ${{ steps.artifact.outputs.name }}.zip.sha256
           fail_on_unmatched_files: true
           generate_release_notes: true
