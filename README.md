@@ -2,71 +2,64 @@
   <img src="assets/usage-radar-logo.svg" alt="Usage Radar logo" width="132" />
 </p>
 
-# Usage Radar
+<h1 align="center">Usage Radar</h1>
 
-Usage Radar is a tray-first Windows desktop app for checking AI usage limits quickly.
-
-
-<p align="left">
-  <img src="assets/image.png" alt="Usage Radar app screenshot" width="480" />
+<p align="center">
+  A small Windows tray app for checking AI usage limits without opening dashboards, browser tabs, or account pages.
 </p>
 
-It opens from the system tray and shows the current state of your Codex and GitHub Copilot usage in a compact popup, so you can answer a simple question fast:
+<p align="center">
+  <a href="https://github.com/athif23/usage-radar/actions/workflows/ci.yml">
+    <img src="https://github.com/athif23/usage-radar/actions/workflows/ci.yml/badge.svg" alt="CI status" />
+  </a>
+  <a href="https://github.com/athif23/usage-radar/actions/workflows/release.yml">
+    <img src="https://github.com/athif23/usage-radar/actions/workflows/release.yml/badge.svg" alt="Release status" />
+  </a>
+  <a href="https://github.com/athif23/usage-radar/releases/latest">
+    <img src="https://img.shields.io/github/v/release/athif23/usage-radar?label=latest%20release" alt="Latest release" />
+  </a>
+</p>
 
-> What can I safely use right now without guessing?
+<p align="center">
+  <img src="assets/image.png" alt="Usage Radar app screenshot" width="520" />
+</p>
 
-This project is built with Rust and [`iced`](https://github.com/iced-rs/iced). It is intentionally small, local-first, and honest about uncertainty.
+Usage Radar is a tray-first desktop app for people who use tools like Codex and GitHub Copilot and want to know, quickly, what is safe to use right now.
 
-Part of the goal is also to avoid wasting resources on a tiny tray app. For this kind of utility, I wanted a native Rust UI stack instead of paying for a heavier web-style runtime.
+Instead of bouncing between dashboards, auth files, and account pages, you open the tray popup and check your remaining budget in a couple of seconds.
 
-- no backend
-- no embedded browser app shell
-- no billing dashboard sprawl
-- no pretending partial data is exact
-- no full Chromium-style runtime for a small tray popup
-
-Usage Radar is an unofficial utility and is not affiliated with OpenAI or GitHub.
-
-## Why it exists
-
-AI usage limits are spread across too many places:
-
-- browser dashboards
-- account pages
-- local CLI auth state
-- provider-specific internal pages
-- and sometimes nowhere obvious at all
-
-That creates daily friction.
-
-There are already apps in this space, but many of them are either built with Tauri or Electron, or only available as macOS apps. Usage Radar exists because I wanted a compact Windows-first app built directly with Rust and `iced`, with less runtime overhead than shipping a full Chromium-style app shell for a tiny tray utility.
-
-Usage Radar is meant to feel like a small Windows utility you can pop open many times a day for a fast, trustworthy answer.
-
-## Current status
-
-Usage Radar is currently an early but working Windows-first MVP.
-
-Today it focuses on the first useful vertical slice:
+Right now the app is Windows-first and supports:
 
 - Codex
 - GitHub Copilot
-- compact tray popup UX
-- honest refresh, stale, and unavailable states
 
-## Features
+## Why I built it
 
-- Tray-first app built with `iced::daemon`
-- Compact popup panel anchored like a real Windows tray utility
-- Bottom-right popup positioning above the taskbar on Windows
-- Focus-aware tray click behavior:
-  - hidden -> open
-  - frontmost -> hide
-  - behind other apps -> bring to front
-- Real Codex usage fetch
-- Real GitHub Copilot sign-in and usage fetch
-- Local config and cache persistence
-- Honest stale, unavailable, and partial-data handling
+I kept wanting a tiny utility for this.
+
+AI usage limits live in too many places:
+
+- browser dashboards
+- account pages
+- CLI auth state
+- provider-specific internal endpoints
+- and sometimes nowhere obvious at all
+
+There are already apps in this space, but many of them are macOS-only or built around a webview stack like Tauri or Electron. I wanted something that felt more like a small Windows utility: fast to open, light on overhead, and built directly in Rust with [`iced`](https://github.com/iced-rs/iced).
+
+The goal is simple: open the tray popup, glance at the numbers, and move on.
+
+Usage Radar is an unofficial utility and is not affiliated with OpenAI or GitHub.
+
+## What it does today
+
+- lives in the system tray
+- opens a compact popup instead of a full dashboard window
+- shows real Codex usage data
+- shows real GitHub Copilot usage data
+- caches the last known snapshot locally
+- labels stale, unavailable, and partial states honestly
+- brings the popup back to the front if it is already open behind another app
 
 ## Provider support
 
@@ -79,41 +72,63 @@ Today it focuses on the first useful vertical slice:
 
 ### What "partial" means
 
-GitHub Copilot can return usable quota percentages while still omitting some timing details, especially reset timing. Usage Radar shows that honestly instead of inventing precision.
+GitHub Copilot can return useful quota percentages while still leaving out some details, especially reset timing. Usage Radar shows that as partial instead of pretending the data is more complete than it is.
 
 ## Why this repo may be useful if you're learning `iced`
 
-Usage Radar is a small real app, not a demo widget gallery. If you are learning `iced`, this repo may be useful because it shows how to build a tray-first desktop utility around a compact popup UI without leaning on Tauri, Electron, or a webview shell.
+This is a real app, not a gallery of isolated widgets.
 
-Things this repo demonstrates:
+If you are learning `iced`, this repo shows how to build a tray-first utility with a compact popup UI without reaching for a browser shell.
 
-- using `iced::daemon` instead of a normal always-visible app window
-- integrating a tray icon with `tray-icon`
-- keeping a reusable popup window hidden/shown instead of recreating it every click
-- handling panel focus and tray-driven bring-to-front behavior
-- positioning a popup near the Windows tray area
-- using `Task` and subscriptions for background refresh work
-- building a compact custom-styled popup with `iced`
-- storing local JSON config/cache state with `serde`
-- keeping provider-specific fetch logic separate from app UI state
+A few things in here that may be useful:
 
-## How it works
+- `iced::daemon` for a tray-style app with no normal main window
+- `tray-icon` integration
+- keeping one popup window alive and hiding/showing it instead of recreating it every click
+- focus-aware tray click behavior
+- bottom-right popup positioning on Windows
+- background refresh using `Task` and subscriptions
+- local JSON config and cache persistence with `serde`
+- provider adapters that normalize provider-specific responses into one shared snapshot shape
 
-Usage Radar stays intentionally simple.
+## How it is organized
 
-- `src/main.rs` boots an `iced::daemon`
-- `src/app/` owns the main state, refresh loop, UI rendering, and user interactions
-- `src/tray/` owns the tray icon and tray menu wiring
-- `src/panel/` owns popup window sizing and positioning
-- `src/providers/` owns provider-specific fetch/parsing logic
-- `src/storage/` owns local JSON config/cache persistence
-- `src/util/` owns small path helpers
+```text
+usage-radar/
+├── assets/
+├── docs/
+│   └── plans/
+├── src/
+│   ├── app/
+│   ├── panel/
+│   ├── providers/
+│   ├── storage/
+│   ├── tray/
+│   ├── util/
+│   └── main.rs
+├── MVP.md
+├── SPEC.md
+└── Cargo.toml
+```
 
-Provider adapters normalize their source data into a shared `ProviderSnapshot` shape. The app then owns display logic, refresh orchestration, tray state, and cache state.
+High-level ownership:
+
+- `src/app/` owns app state, refresh flow, rendering, and user interactions
+- `src/tray/` owns tray integration and menu handling
+- `src/panel/` owns popup sizing and positioning
+- `src/providers/` owns provider-specific fetch and parsing logic
+- `src/storage/` owns config and cache persistence
+
+If you are new to the codebase, start with:
+
+- `MVP.md`
+- `SPEC.md`
+- `src/main.rs`
+- `src/app/mod.rs`
 
 ## Local data and auth
 
-Usage Radar keeps its local state on Windows here:
+Usage Radar stores local state on Windows here:
 
 - Config: `%APPDATA%\UsageRadar\config.json`
 - Cache: `%LOCALAPPDATA%\UsageRadar\snapshots.json`
@@ -122,16 +137,20 @@ Auth details:
 
 - Codex auth is read from `%USERPROFILE%\.codex\auth.json` or `CODEX_HOME\auth.json`
 - GitHub Copilot uses GitHub device flow
-- The saved Copilot token is stored in Windows credential storage, not in the app config/cache JSON
+- The saved Copilot token is stored in Windows credential storage, not in app JSON files
 
 ## Run locally
 
 ### Requirements
 
-- Windows 10 or Windows 11
 - Rust stable toolchain
 - Codex installed and signed in if you want Codex data
-- A GitHub account with Copilot access if you want Copilot data
+- a GitHub account with Copilot access if you want Copilot data
+
+Platform note:
+
+- Windows is the only platform tested properly right now
+- macOS and Linux should be treated as untested for now
 
 ### Run
 
@@ -157,80 +176,56 @@ The release binary will be:
 target/release/usage-radar.exe
 ```
 
-## Download release builds
+## Download
 
-This repo includes a GitHub Actions release workflow.
+Latest release:
 
-- Manual workflow runs build a Windows release zip and upload it as a workflow artifact
-- Tagged releases like `v0.1.0` build the Windows zip and attach it to GitHub Releases automatically
+- https://github.com/athif23/usage-radar/releases/latest
 
-Release artifacts are packaged as:
+Release archives are packaged like this:
 
 ```text
 usage-radar-<version>-windows-x64.zip
 ```
 
-Each archive contains:
+Each archive currently contains:
 
 - `usage-radar.exe`
 - `README.md`
 - `LICENSE`
 
-## Repo map
-
-```text
-usage-radar/
-├── assets/
-├── docs/
-│   └── plans/
-├── src/
-│   ├── app/
-│   ├── panel/
-│   ├── providers/
-│   ├── storage/
-│   ├── tray/
-│   ├── util/
-│   └── main.rs
-├── MVP.md
-├── SPEC.md
-└── Cargo.toml
-```
-
-If you are new to the codebase, start with:
-
-- `MVP.md`
-- `SPEC.md`
-- `src/main.rs`
-- `src/app/mod.rs`
-
 ## Limitations
 
-- Windows-first only right now
-- Provider support is only as stable as the underlying provider surfaces
-- Codex and Copilot may change their auth or usage endpoints in the future
-- Claude Code and Gemini CLI are not wired yet
-- The UI is intentionally compact and still evolving
+- Windows is the only platform tested properly right now
+- macOS and Linux support are goals, but should be treated as untested until they are actually validated
+- provider support is only as stable as the upstream surfaces we depend on
+- Codex and Copilot can change their auth or usage endpoints at any time
+- Claude Code and Gemini CLI are planned, but not implemented yet
+- the settings/config UI is still minimal
 
 ## Roadmap
 
-Near-term:
+Near-term work:
 
-- keep polishing the compact tray popup UX
-- add trustworthy provider integrations only when real sources exist
-- improve release polish and onboarding for first-time users
-- keep the codebase understandable for contributors and `iced` learners
+- add more providers, starting with Claude Code and Gemini
+- add a real settings/config page instead of keeping everything implicit
+- make it easier to connect or disable providers cleanly
+- explore custom provider support so people can define their own provider integrations
+- expand beyond Windows and start validating the app on macOS and Linux
+- keep polishing the popup so it feels more like a finished tray utility and less like a dev tool
 
 ## Contributing
 
 Issues and PRs are welcome.
 
-A good way to contribute is to keep the project aligned with its core shape:
+If you are on macOS or Linux and want to help push the app beyond Windows, testing reports and platform-specific fixes would be especially useful.
+
+If you want to contribute, the main thing to keep in mind is the shape of the app:
 
 - tray-first
 - compact
-- Windows-first
 - honest about freshness and confidence
-- calm code over clever abstractions
+- direct code over clever abstractions
 
 ## License
 
