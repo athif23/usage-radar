@@ -15,6 +15,8 @@ pub enum Message {
     OpenAbout,
     OpenConfigFolder,
     OpenOpenCodeGo,
+    ShowOpenCodeGoSetup,
+    HideOpenCodeGoSetup,
     OpenCodeGoCookieHeaderChanged(String),
     OpenCodeGoWorkspaceIdChanged(String),
     SaveOpenCodeGoSettings,

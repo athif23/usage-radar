@@ -85,6 +85,14 @@ impl App {
             }
             Message::OpenConfigFolder => self.open_config_folder(),
             Message::OpenOpenCodeGo => self.open_open_code_go(),
+            Message::ShowOpenCodeGoSetup => {
+                self.panel.show_open_code_go_setup = true;
+                Task::none()
+            }
+            Message::HideOpenCodeGoSetup => {
+                self.panel.show_open_code_go_setup = false;
+                Task::none()
+            }
             Message::OpenCodeGoCookieHeaderChanged(value) => {
                 self.config.opencode_go_cookie_header = Some(value);
                 Task::none()
@@ -327,6 +335,11 @@ impl App {
 
     fn handle_select_page(&mut self, selected_provider: Option<ProviderKind>) -> Task<Message> {
         self.panel.show_about = false;
+
+        if selected_provider != Some(ProviderKind::OpenCodeGo) {
+            self.panel.show_open_code_go_setup = false;
+        }
+
         self.panel.selected_provider = selected_provider;
         self.config.selected_provider = selected_provider;
         self.persist_config();
@@ -370,6 +383,7 @@ impl App {
             normalize_optional_config_value(self.config.opencode_go_cookie_header.take());
         self.config.opencode_go_workspace_id =
             normalize_optional_config_value(self.config.opencode_go_workspace_id.take());
+        self.panel.show_open_code_go_setup = false;
         self.persist_config();
         self.request_refresh(RefreshReason::Manual)
     }
@@ -377,6 +391,7 @@ impl App {
     fn clear_open_code_go_settings(&mut self) -> Task<Message> {
         self.config.opencode_go_cookie_header = None;
         self.config.opencode_go_workspace_id = None;
+        self.panel.show_open_code_go_setup = false;
         self.persist_config();
         self.request_refresh(RefreshReason::Manual)
     }
@@ -891,9 +906,15 @@ impl App {
     }
 
     fn open_code_go_page_view(&self) -> Element<'_, Message> {
+        let snapshot = self.snapshot(ProviderKind::OpenCodeGo);
+        let manual_override_active = self.open_code_go_manual_override_active();
+        let setup_visible = self.open_code_go_setup_visible(snapshot);
+        let can_collapse_setup = snapshot
+            .map(|snapshot| !snapshot.unavailable)
+            .unwrap_or(false);
         let mut body = column![open_code_go_page_header()].spacing(10);
 
-        if let Some(snapshot) = self.snapshot(ProviderKind::OpenCodeGo) {
+        if let Some(snapshot) = snapshot {
             if !snapshot.unavailable {
                 body = body.push(provider_panel(
                     self.provider_card_model(ProviderKind::OpenCodeGo),
@@ -914,16 +935,29 @@ impl App {
             ));
         }
 
-        body = body.push(open_code_go_setup_card(
-            self.config
-                .opencode_go_cookie_header
-                .as_deref()
-                .unwrap_or(""),
-            self.config
-                .opencode_go_workspace_id
-                .as_deref()
-                .unwrap_or(""),
-        ));
+        if setup_visible {
+            body = body.push(open_code_go_setup_card(
+                self.config
+                    .opencode_go_cookie_header
+                    .as_deref()
+                    .unwrap_or(""),
+                self.config
+                    .opencode_go_workspace_id
+                    .as_deref()
+                    .unwrap_or(""),
+                can_collapse_setup,
+            ));
+        } else if snapshot.is_some() {
+            body = body.push(open_code_go_connection_card(
+                if manual_override_active {
+                    "Manual override active"
+                } else {
+                    "Connected automatically"
+                },
+                self.open_code_go_connection_detail(snapshot, manual_override_active),
+                manual_override_active,
+            ));
+        }
 
         container(body)
             .width(Length::Fill)
@@ -1142,6 +1176,59 @@ impl App {
             .providers
             .iter()
             .find(|snapshot| snapshot.kind == kind)
+    }
+
+    fn open_code_go_setup_visible(&self, snapshot: Option<&ProviderSnapshot>) -> bool {
+        self.panel.show_open_code_go_setup
+            || snapshot
+                .map(|snapshot| snapshot.unavailable)
+                .unwrap_or(!self.refresh.in_flight)
+    }
+
+    fn open_code_go_manual_override_active(&self) -> bool {
+        self.config
+            .opencode_go_cookie_header
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .is_some()
+    }
+
+    fn open_code_go_workspace_override_active(&self) -> bool {
+        self.config
+            .opencode_go_workspace_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .is_some()
+    }
+
+    fn open_code_go_connection_detail(
+        &self,
+        snapshot: Option<&ProviderSnapshot>,
+        manual_override_active: bool,
+    ) -> String {
+        let workspace_override_active = self.open_code_go_workspace_override_active();
+
+        if manual_override_active {
+            if workspace_override_active {
+                "Usage Radar is using the saved Cookie header and workspace override instead of browser auto import."
+                    .to_string()
+            } else {
+                "Usage Radar is using the saved Cookie header instead of browser auto import."
+                    .to_string()
+            }
+        } else if let Some(note) = snapshot.and_then(first_meaningful_note) {
+            if workspace_override_active {
+                format!("{note} Workspace override saved.")
+            } else {
+                note
+            }
+        } else if workspace_override_active {
+            "Usage Radar is using browser import with a saved workspace override.".to_string()
+        } else {
+            "Usage Radar is using browser import for OpenCode Go.".to_string()
+        }
     }
 
     fn should_show_copilot_connect_button(&self) -> bool {
@@ -1466,19 +1553,68 @@ fn primary_action_button(
         .on_press(message)
 }
 
-fn open_code_go_setup_card(cookie_header: &str, workspace_id: &str) -> Element<'static, Message> {
+fn open_code_go_connection_card(
+    title: &'static str,
+    detail: String,
+    manual_override_active: bool,
+) -> Element<'static, Message> {
+    let mut actions = row![text_inline_button(
+        "Edit setup",
+        Message::ShowOpenCodeGoSetup
+    )]
+    .spacing(10)
+    .align_y(Alignment::Center);
+
+    actions = if manual_override_active {
+        actions.push(text_inline_button(
+            "Clear override",
+            Message::ClearOpenCodeGoSettings,
+        ))
+    } else {
+        actions.push(text_inline_button(
+            "Open OpenCode Go",
+            Message::OpenOpenCodeGo,
+        ))
+    };
+
+    container(
+        column![
+            text(title).size(13).color(color_text()),
+            text(detail).size(11).color(color_muted()),
+            actions,
+        ]
+        .spacing(7),
+    )
+    .width(Length::Fill)
+    .padding(10)
+    .style(|_theme| provider_card_style(color_border()))
+    .into()
+}
+
+fn open_code_go_setup_card(
+    cookie_header: &str,
+    workspace_id: &str,
+    can_collapse: bool,
+) -> Element<'static, Message> {
+    let mut secondary_actions = row![
+        text_inline_button("Open OpenCode Go", Message::OpenOpenCodeGo),
+        text_inline_button("Clear", Message::ClearOpenCodeGoSettings),
+    ]
+    .spacing(10)
+    .align_y(Alignment::Center);
+
+    if can_collapse {
+        secondary_actions =
+            secondary_actions.push(text_inline_button("Done", Message::HideOpenCodeGoSetup));
+    }
+
     let actions = column![
         primary_action_button(
             "Save & refresh",
             provider_accent(ProviderKind::OpenCodeGo),
             Message::SaveOpenCodeGoSettings,
         ),
-        row![
-            text_inline_button("Open OpenCode Go", Message::OpenOpenCodeGo),
-            text_inline_button("Clear", Message::ClearOpenCodeGoSettings),
-        ]
-        .spacing(10)
-        .align_y(Alignment::Center),
+        secondary_actions,
     ]
     .spacing(8);
 
@@ -1602,6 +1738,8 @@ fn notice_view(message: String, tone: Tone) -> Element<'static, Message> {
 }
 
 fn provider_sections(kind: ProviderKind, snapshot: &ProviderSnapshot) -> Vec<ProviderSection> {
+    let accent = progress_accent(kind);
+
     if !snapshot.detail_bars.is_empty() {
         snapshot
             .detail_bars
@@ -1611,7 +1749,7 @@ fn provider_sections(kind: ProviderKind, snapshot: &ProviderSnapshot) -> Vec<Pro
                 progress: bar.percent_left.clamp(0.0, 100.0),
                 leading: format_percent_left(bar.percent_left),
                 trailing: format_reset_text(bar.reset_at),
-                accent: provider_accent(kind),
+                accent,
             })
             .collect()
     } else if let Some(bar) = snapshot.summary_bar.as_ref() {
@@ -1620,7 +1758,7 @@ fn provider_sections(kind: ProviderKind, snapshot: &ProviderSnapshot) -> Vec<Pro
             progress: bar.percent_left.clamp(0.0, 100.0),
             leading: format_percent_left(bar.percent_left),
             trailing: format_reset_text(bar.reset_at),
-            accent: provider_accent(kind),
+            accent,
         }]
     } else {
         Vec::new()
@@ -2021,6 +2159,13 @@ fn provider_accent(kind: ProviderKind) -> Color {
         ProviderKind::Copilot => color_rgb(46, 169, 79),
         ProviderKind::ClaudeCode => color_rgb(176, 131, 71),
         ProviderKind::OpenCodeGo => color_rgb(207, 206, 205),
+    }
+}
+
+fn progress_accent(kind: ProviderKind) -> Color {
+    match kind {
+        ProviderKind::OpenCodeGo => color_rgb(27, 24, 24),
+        _ => provider_accent(kind),
     }
 }
 
