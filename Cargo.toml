@@ -2,7 +2,7 @@
 name = "usage-radar"
 version = "0.1.2"
 edition = "2021"
-description = "Tray-first desktop app for checking Codex and GitHub Copilot usage quickly"
+description = "Tray-first desktop app for checking AI usage limits quickly"
 readme = "README.md"
 license = "MIT"
 

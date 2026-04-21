@@ -928,10 +928,11 @@ impl App {
                 });
                 body = body.push(action_status_card("OpenCode Go not connected", &detail));
             }
-        } else if !self.refresh.in_flight {
-            body = body.push(action_status_card(
-                "OpenCode Go not connected",
-                "Usage Radar will try to import your OpenCode Go session from Chrome, Brave, or Edge on Windows. If that fails, use the manual Cookie fallback below.",
+        } else {
+            body = body.push(provider_panel(
+                self.provider_card_model(ProviderKind::OpenCodeGo),
+                false,
+                false,
             ));
         }
 

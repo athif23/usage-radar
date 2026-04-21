@@ -34,7 +34,7 @@ Right now the app supports:
 
 - Codex
 - GitHub Copilot
-- OpenCode Go (manual cookie config for now)
+- OpenCode Go
 
 ## Why I built it
 
@@ -71,7 +71,7 @@ Usage Radar is an unofficial utility and is not affiliated with OpenAI or GitHub
 | --- | --- | --- | --- |
 | Codex | Working | `~/.codex/auth.json` or `CODEX_HOME/auth.json` + `https://chatgpt.com/backend-api/wham/usage` | Exact |
 | GitHub Copilot | Working | GitHub device flow + `https://api.github.com/copilot_internal/user` | Partial |
-| OpenCode Go | Working | `opencode.ai` cookie header + usage page parsing based on the CodexBar approach | Exact |
+| OpenCode Go | Working | Windows browser session import from Chrome/Brave/Edge or manual cookie fallback + usage page parsing based on the CodexBar approach | Exact |
 | Claude Code | Planned | Not wired yet | — |
 
 ### What "partial" means
@@ -142,7 +142,8 @@ Auth details:
 - Codex auth is read from `%USERPROFILE%\.codex\auth.json` or `CODEX_HOME\auth.json`
 - GitHub Copilot uses GitHub device flow
 - The saved Copilot token is stored in Windows credential storage, not in app JSON files
-- OpenCode Go currently uses a manual cookie header via `OPENCODE_GO_COOKIE_HEADER` or `opencode_go_cookie_header` in `config.json`
+- OpenCode Go tries to import a browser session from Chrome, Brave, or Edge on Windows
+- You can still force a manual override via `OPENCODE_GO_COOKIE_HEADER` or `opencode_go_cookie_header` in `config.json`
 
 ## Run locally
 
@@ -151,7 +152,8 @@ Auth details:
 - Rust stable toolchain
 - Codex installed and signed in if you want Codex data
 - a GitHub account with Copilot access if you want Copilot data
-- an OpenCode Go cookie header if you want OpenCode Go data
+- an OpenCode Go browser session in Chrome, Brave, or Edge on Windows if you want automatic setup
+- or an OpenCode Go cookie header if you want to use the manual override
 
 Platform note:
 
