@@ -1,5 +1,13 @@
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+#[cfg(target_os = "windows")]
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
+
+#[cfg(target_os = "windows")]
+use cookie_scoop::{get_cookies, BrowserName, CookieMode, GetCookiesOptions};
 use regex::Regex;
 
 use crate::providers::snapshot::{Confidence, LimitBar};
@@ -8,6 +16,7 @@ use crate::storage::config as config_store;
 use crate::util::paths;
 
 const BASE_URL: &str = "https://opencode.ai";
+const APP_URL: &str = "https://app.opencode.ai";
 const SERVER_URL: &str = "https://opencode.ai/_server";
 const WORKSPACES_SERVER_ID: &str =
     "def39973159c7f0483d8793a822b8dbb10d067e12c65455fcb4608459ba0234f";
@@ -17,33 +26,32 @@ const ENV_WORKSPACE_ID: &str = "OPENCODE_GO_WORKSPACE_ID";
 
 pub async fn fetch_snapshot() -> Result<ProviderSnapshot, String> {
     let settings = load_settings()?;
-    let Some(cookie_header) = request_cookie_header(settings.cookie_header.as_deref()) else {
-        return Ok(disconnected_snapshot(
-            "Add an OpenCode Go Cookie header to OPENCODE_GO_COOKIE_HEADER or config.json to connect this provider.",
-        ));
+    let resolved_cookie = match resolve_cookie_header(&settings).await {
+        CookieLookup::Found(cookie) => cookie,
+        CookieLookup::Missing(message) => return Ok(disconnected_snapshot(&message)),
     };
 
     let workspace_id =
         if let Some(workspace_id) = normalize_workspace_id(settings.workspace_id.as_deref()) {
             workspace_id
         } else {
-            match fetch_workspace_id(&cookie_header).await {
+            match fetch_workspace_id(&resolved_cookie.header).await {
                 Ok(workspace_id) => workspace_id,
                 Err(OpenCodeGoFetchError::InvalidCredentials) => {
-                    return Ok(disconnected_snapshot(
-                    "OpenCode Go rejected the saved cookie. Update it to reconnect this provider.",
-                ));
+                    return Ok(disconnected_snapshot(&invalid_cookie_message(
+                        &resolved_cookie.source,
+                    )));
                 }
                 Err(OpenCodeGoFetchError::Message(error)) => return Err(error),
             }
         };
 
-    let usage_page = match fetch_usage_page(&workspace_id, &cookie_header).await {
+    let usage_page = match fetch_usage_page(&workspace_id, &resolved_cookie.header).await {
         Ok(usage_page) => usage_page,
         Err(OpenCodeGoFetchError::InvalidCredentials) => {
-            return Ok(disconnected_snapshot(
-                "OpenCode Go rejected the saved cookie. Update it to reconnect this provider.",
-            ));
+            return Ok(disconnected_snapshot(&invalid_cookie_message(
+                &resolved_cookie.source,
+            )));
         }
         Err(OpenCodeGoFetchError::Message(error)) => return Err(error),
     };
@@ -89,7 +97,7 @@ pub async fn fetch_snapshot() -> Result<ProviderSnapshot, String> {
         unavailable: false,
         summary_bar,
         detail_bars,
-        notes: Vec::new(),
+        notes: resolved_cookie.source.notes(),
     })
 }
 
@@ -106,6 +114,35 @@ struct OpenCodeGoUsage {
     weekly_usage_percent: f32,
     weekly_reset_in_sec: u64,
     monthly_usage: Option<(f32, u64)>,
+}
+
+#[derive(Debug)]
+struct ResolvedCookieHeader {
+    header: String,
+    source: CookieSource,
+}
+
+#[derive(Debug)]
+enum CookieLookup {
+    Found(ResolvedCookieHeader),
+    Missing(String),
+}
+
+#[derive(Debug)]
+enum CookieSource {
+    Configured,
+    BrowserImport { source_label: String },
+}
+
+impl CookieSource {
+    fn notes(&self) -> Vec<String> {
+        match self {
+            Self::Configured => Vec::new(),
+            Self::BrowserImport { source_label } => {
+                vec![format!("Imported browser session from {source_label}.")]
+            }
+        }
+    }
 }
 
 enum OpenCodeGoFetchError {
@@ -145,6 +182,52 @@ fn load_settings() -> Result<OpenCodeGoSettings, String> {
         cookie_header: env_cookie_header.or(file_settings.cookie_header),
         workspace_id: env_workspace_id.or(file_settings.workspace_id),
     })
+}
+
+async fn resolve_cookie_header(settings: &OpenCodeGoSettings) -> CookieLookup {
+    if let Some(cookie_header) = request_cookie_header(settings.cookie_header.as_deref()) {
+        return CookieLookup::Found(ResolvedCookieHeader {
+            header: cookie_header,
+            source: CookieSource::Configured,
+        });
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        if let Some(browser_cookie) = import_browser_cookie_header().await {
+            return CookieLookup::Found(ResolvedCookieHeader {
+                header: browser_cookie.header,
+                source: CookieSource::BrowserImport {
+                    source_label: browser_cookie.source_label,
+                },
+            });
+        }
+
+        CookieLookup::Missing(
+            "Usage Radar couldn't find an OpenCode Go browser session in Chrome, Brave, or Edge. Sign into opencode.ai in one of those browsers, or paste a Cookie header below."
+                .to_string(),
+        )
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        CookieLookup::Missing(
+            "Paste a Cookie header below to connect OpenCode Go right now. Automatic browser import is only wired on Windows today."
+                .to_string(),
+        )
+    }
+}
+
+fn invalid_cookie_message(source: &CookieSource) -> String {
+    match source {
+        CookieSource::Configured => {
+            "OpenCode Go rejected the configured Cookie header. Update it, or clear it to let Usage Radar try browser import again."
+                .to_string()
+        }
+        CookieSource::BrowserImport { source_label } => format!(
+            "Usage Radar found an OpenCode Go browser session in {source_label}, but OpenCode Go rejected it. Sign into opencode.ai there again, or paste a Cookie header below."
+        ),
+    }
 }
 
 fn request_cookie_header(raw_header: Option<&str>) -> Option<String> {
@@ -240,7 +323,7 @@ async fn fetch_workspace_id(cookie_header: &str) -> Result<String, OpenCodeGoFet
 }
 
 fn parse_workspace_id(text: &str) -> Option<String> {
-    let regex = Regex::new(r#"id\s*:\s*"(wrk_[^"]+)""#).ok()?;
+    let regex = Regex::new(r#"id\s*:\s*\"(wrk_[^\"]+)\""#).ok()?;
     regex
         .captures(text)
         .and_then(|captures| captures.get(1))
@@ -446,4 +529,216 @@ fn human_duration(seconds: u64) -> String {
     } else {
         format!("{}d", seconds / 86_400)
     }
+}
+
+#[cfg(target_os = "windows")]
+#[derive(Debug)]
+struct BrowserCookieHeader {
+    header: String,
+    source_label: String,
+}
+
+#[cfg(target_os = "windows")]
+#[derive(Debug, Clone, Copy)]
+enum WindowsBrowser {
+    Chrome,
+    Brave,
+    Edge,
+}
+
+#[cfg(target_os = "windows")]
+impl WindowsBrowser {
+    fn label(self) -> &'static str {
+        match self {
+            Self::Chrome => "Chrome",
+            Self::Brave => "Brave",
+            Self::Edge => "Edge",
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+#[derive(Debug)]
+struct BrowserProfileSource {
+    browser: WindowsBrowser,
+    profile_path: String,
+    source_label: String,
+}
+
+#[cfg(target_os = "windows")]
+async fn import_browser_cookie_header() -> Option<BrowserCookieHeader> {
+    for source in browser_profile_sources() {
+        if let Some(header) = browser_cookie_header_for_source(&source).await {
+            return Some(BrowserCookieHeader {
+                header,
+                source_label: source.source_label,
+            });
+        }
+    }
+
+    None
+}
+
+#[cfg(target_os = "windows")]
+async fn browser_cookie_header_for_source(source: &BrowserProfileSource) -> Option<String> {
+    let names = vec!["auth".to_string(), "__Host-auth".to_string()];
+    let origins = vec![BASE_URL.to_string(), APP_URL.to_string()];
+
+    let options = match source.browser {
+        WindowsBrowser::Chrome | WindowsBrowser::Brave => GetCookiesOptions::new(BASE_URL)
+            .origins(origins)
+            .names(names)
+            .browsers(vec![BrowserName::Chrome])
+            .chrome_profile(source.profile_path.clone())
+            .mode(CookieMode::First),
+        WindowsBrowser::Edge => GetCookiesOptions::new(BASE_URL)
+            .origins(origins)
+            .names(names)
+            .browsers(vec![BrowserName::Edge])
+            .edge_profile(source.profile_path.clone())
+            .mode(CookieMode::First),
+    };
+
+    let result = get_cookies(options).await;
+    browser_cookie_header(&result.cookies)
+}
+
+#[cfg(target_os = "windows")]
+fn browser_cookie_header(cookies: &[cookie_scoop::Cookie]) -> Option<String> {
+    let mut host_auth = None;
+    let mut auth = None;
+
+    for cookie in cookies {
+        let value = cookie.value.trim();
+        if value.is_empty() {
+            continue;
+        }
+
+        match cookie.name.as_str() {
+            "__Host-auth" if host_auth.is_none() => {
+                host_auth = Some(format!("__Host-auth={value}"));
+            }
+            "auth" if auth.is_none() => {
+                auth = Some(format!("auth={value}"));
+            }
+            _ => {}
+        }
+    }
+
+    let mut parts = Vec::new();
+    if let Some(host_auth) = host_auth {
+        parts.push(host_auth);
+    }
+    if let Some(auth) = auth {
+        parts.push(auth);
+    }
+
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join("; "))
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn browser_profile_sources() -> Vec<BrowserProfileSource> {
+    let Some(local_app_data) = std::env::var_os("LOCALAPPDATA") else {
+        return Vec::new();
+    };
+
+    let local_app_data = PathBuf::from(local_app_data);
+    let mut sources = Vec::new();
+
+    sources.extend(chromium_profile_sources(
+        WindowsBrowser::Chrome,
+        local_app_data.join("Google/Chrome/User Data"),
+    ));
+    sources.extend(chromium_profile_sources(
+        WindowsBrowser::Brave,
+        local_app_data.join("BraveSoftware/Brave-Browser/User Data"),
+    ));
+    sources.extend(chromium_profile_sources(
+        WindowsBrowser::Edge,
+        local_app_data.join("Microsoft/Edge/User Data"),
+    ));
+
+    sources
+}
+
+#[cfg(target_os = "windows")]
+fn chromium_profile_sources(
+    browser: WindowsBrowser,
+    user_data_dir: PathBuf,
+) -> Vec<BrowserProfileSource> {
+    chromium_profile_dirs(&user_data_dir)
+        .into_iter()
+        .map(|profile_dir| {
+            let profile_name = profile_dir
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("Profile")
+                .to_string();
+
+            BrowserProfileSource {
+                browser,
+                profile_path: profile_dir.to_string_lossy().to_string(),
+                source_label: format!("{} ({profile_name})", browser.label()),
+            }
+        })
+        .collect()
+}
+
+#[cfg(target_os = "windows")]
+fn chromium_profile_dirs(user_data_dir: &Path) -> Vec<PathBuf> {
+    let Ok(entries) = fs::read_dir(user_data_dir) else {
+        return Vec::new();
+    };
+
+    let mut defaults = Vec::new();
+    let mut others = Vec::new();
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+
+        let Some(profile_name) = path.file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+
+        if !matches!(profile_name, "Default") && !profile_name.starts_with("Profile ") {
+            continue;
+        }
+
+        if !has_cookie_db(&path) {
+            continue;
+        }
+
+        if profile_name == "Default" {
+            defaults.push(path);
+        } else {
+            others.push(path);
+        }
+    }
+
+    others.sort_by(|left, right| {
+        left.file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default()
+            .cmp(
+                right
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .unwrap_or_default(),
+            )
+    });
+
+    defaults.extend(others);
+    defaults
+}
+
+#[cfg(target_os = "windows")]
+fn has_cookie_db(profile_dir: &Path) -> bool {
+    profile_dir.join("Network").join("Cookies").exists() || profile_dir.join("Cookies").exists()
 }

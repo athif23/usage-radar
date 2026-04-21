@@ -9,6 +9,7 @@ use std::time::{Duration, SystemTime};
 use iced::widget::svg;
 use iced::widget::{
     button, column, container, horizontal_space, mouse_area, progress_bar, row, scrollable, text,
+    text_input,
 };
 use iced::{
     alignment, clipboard, event, keyboard, mouse, window, Alignment, Border, Color, Element, Event,
@@ -83,6 +84,17 @@ impl App {
                 Task::none()
             }
             Message::OpenConfigFolder => self.open_config_folder(),
+            Message::OpenOpenCodeGo => self.open_open_code_go(),
+            Message::OpenCodeGoCookieHeaderChanged(value) => {
+                self.config.opencode_go_cookie_header = Some(value);
+                Task::none()
+            }
+            Message::OpenCodeGoWorkspaceIdChanged(value) => {
+                self.config.opencode_go_workspace_id = Some(value);
+                Task::none()
+            }
+            Message::SaveOpenCodeGoSettings => self.save_open_code_go_settings(),
+            Message::ClearOpenCodeGoSettings => self.clear_open_code_go_settings(),
             Message::OpenCopilotVerification => self.open_copilot_verification(),
             Message::CopyCopilotCode => self.copy_copilot_code(),
             Message::CopilotConnectRequested => self.start_copilot_sign_in(),
@@ -142,19 +154,23 @@ impl App {
             body = body.push(notice_view(notice, self.notice_tone()));
         }
 
-        let scrollable_body = scrollable(body)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .direction(iced::widget::scrollable::Direction::Vertical(
-                iced::widget::scrollable::Scrollbar::new()
-                    .width(3)
-                    .scroller_width(4)
-                    .margin(1),
-            ))
-            .on_scroll(|_| Message::PanelScrolled)
-            .style(move |_theme, status| {
-                panel_scrollable_style(status, self.panel.scrollbar_is_active())
-            });
+        let scrollable_body = scrollable(
+            container(body)
+                .width(Length::Fill)
+                .padding(Padding::ZERO.bottom(10.0)),
+        )
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .direction(iced::widget::scrollable::Direction::Vertical(
+            iced::widget::scrollable::Scrollbar::new()
+                .width(3)
+                .scroller_width(4)
+                .margin(1),
+        ))
+        .on_scroll(|_| Message::PanelScrolled)
+        .style(move |_theme, status| {
+            panel_scrollable_style(status, self.panel.scrollbar_is_active())
+        });
 
         let layout = column![
             self.top_tabs_view(),
@@ -343,6 +359,26 @@ impl App {
                 Task::none()
             }
         }
+    }
+
+    fn open_open_code_go(&mut self) -> Task<Message> {
+        self.open_external_target("https://opencode.ai", "OpenCode Go")
+    }
+
+    fn save_open_code_go_settings(&mut self) -> Task<Message> {
+        self.config.opencode_go_cookie_header =
+            normalize_optional_config_value(self.config.opencode_go_cookie_header.take());
+        self.config.opencode_go_workspace_id =
+            normalize_optional_config_value(self.config.opencode_go_workspace_id.take());
+        self.persist_config();
+        self.request_refresh(RefreshReason::Manual)
+    }
+
+    fn clear_open_code_go_settings(&mut self) -> Task<Message> {
+        self.config.opencode_go_cookie_header = None;
+        self.config.opencode_go_workspace_id = None;
+        self.persist_config();
+        self.request_refresh(RefreshReason::Manual)
     }
 
     fn open_copilot_verification(&mut self) -> Task<Message> {
@@ -753,7 +789,7 @@ impl App {
                 provider_accent(ProviderKind::Copilot),
             ),
             page_tab_button(
-                "OpenCode",
+                "Go",
                 TabIcon::OpenCode,
                 opencode_active,
                 Message::SelectPage(Some(ProviderKind::OpenCodeGo)),
@@ -797,6 +833,10 @@ impl App {
     fn provider_page_view(&self, kind: ProviderKind) -> Element<'_, Message> {
         if kind == ProviderKind::Copilot {
             return self.copilot_page_view();
+        }
+
+        if kind == ProviderKind::OpenCodeGo {
+            return self.open_code_go_page_view();
         }
 
         container(column![provider_panel(self.provider_card_model(kind), false, true)].spacing(8))
@@ -850,6 +890,47 @@ impl App {
             .into()
     }
 
+    fn open_code_go_page_view(&self) -> Element<'_, Message> {
+        let mut body = column![open_code_go_page_header()].spacing(10);
+
+        if let Some(snapshot) = self.snapshot(ProviderKind::OpenCodeGo) {
+            if !snapshot.unavailable {
+                body = body.push(provider_panel(
+                    self.provider_card_model(ProviderKind::OpenCodeGo),
+                    false,
+                    false,
+                ));
+            } else {
+                let detail = first_meaningful_note(snapshot).unwrap_or_else(|| {
+                    "Usage Radar will try to import your OpenCode Go session from Chrome, Brave, or Edge on Windows. If that fails, use the manual Cookie fallback below."
+                        .to_string()
+                });
+                body = body.push(action_status_card("OpenCode Go not connected", &detail));
+            }
+        } else if !self.refresh.in_flight {
+            body = body.push(action_status_card(
+                "OpenCode Go not connected",
+                "Usage Radar will try to import your OpenCode Go session from Chrome, Brave, or Edge on Windows. If that fails, use the manual Cookie fallback below.",
+            ));
+        }
+
+        body = body.push(open_code_go_setup_card(
+            self.config
+                .opencode_go_cookie_header
+                .as_deref()
+                .unwrap_or(""),
+            self.config
+                .opencode_go_workspace_id
+                .as_deref()
+                .unwrap_or(""),
+        ));
+
+        container(body)
+            .width(Length::Fill)
+            .padding(Padding::ZERO.top(8.0).left(8.0).right(8.0))
+            .into()
+    }
+
     fn about_page_view(&self) -> Element<'_, Message> {
         let version = env!("CARGO_PKG_VERSION");
         let config_path = self
@@ -874,7 +955,7 @@ impl App {
                 .size(13)
                 .color(color_text()),
             text(
-                "Codex uses the real usage endpoint, Copilot uses GitHub sign-in plus GitHub's usage API, and OpenCode Go uses a manual opencode.ai cookie header for now. Claude stays placeholder until it has a trustworthy source."
+                "Codex uses the real usage endpoint, Copilot uses GitHub sign-in plus GitHub's usage API, and OpenCode Go tries automatic browser import on Windows with a manual Cookie fallback. Claude stays placeholder until it has a trustworthy source."
             )
             .size(12)
             .color(color_muted()),
@@ -978,11 +1059,18 @@ impl App {
                     accent,
                     subtitle: None,
                     sections: Vec::new(),
-                    headline: Some("OpenCode Go not connected yet".to_string()),
-                    detail: Some(
-                        "Add OPENCODE_GO_COOKIE_HEADER or opencode_go_cookie_header in config.json to connect OpenCode Go until the settings page lands."
-                            .to_string(),
-                    ),
+                    headline: Some(if self.refresh.in_flight {
+                        "Looking for an OpenCode Go session".to_string()
+                    } else {
+                        "OpenCode Go not connected yet".to_string()
+                    }),
+                    detail: Some(if self.refresh.in_flight {
+                        "Usage Radar is checking Chrome, Brave, and Edge first. If none has a usable session, you can use the manual Cookie fallback on the OpenCode Go page."
+                            .to_string()
+                    } else {
+                        "Usage Radar will try to import your OpenCode Go browser session on Windows first. If that fails, you can paste a manual Cookie header on the OpenCode Go page."
+                            .to_string()
+                    }),
                 },
                 _ => ProviderCardModel {
                     title,
@@ -999,15 +1087,26 @@ impl App {
         };
 
         if snapshot.unavailable {
+            let headline = if kind == ProviderKind::OpenCodeGo {
+                "OpenCode Go not connected yet".to_string()
+            } else {
+                "Usage temporarily unavailable".to_string()
+            };
+
             return ProviderCardModel {
                 title,
                 accent,
                 subtitle: snapshot_subtitle(snapshot),
                 sections: Vec::new(),
-                headline: Some("Usage temporarily unavailable".to_string()),
+                headline: Some(headline),
                 detail: Some(first_meaningful_note(snapshot).unwrap_or_else(|| {
-                    "The provider is expected, but no reliable snapshot is available yet."
-                        .to_string()
+                    if kind == ProviderKind::OpenCodeGo {
+                        "Usage Radar will try browser import first. If that does not work, use the manual Cookie fallback on the OpenCode Go page."
+                            .to_string()
+                    } else {
+                        "The provider is expected, but no reliable snapshot is available yet."
+                            .to_string()
+                    }
                 })),
             };
         }
@@ -1291,6 +1390,14 @@ fn copilot_page_header(has_saved_token: bool) -> Element<'static, Message> {
     column![header, divider_line()].spacing(8).into()
 }
 
+fn open_code_go_page_header() -> Element<'static, Message> {
+    let header = row![text("OpenCode Go").size(15).color(color_text())]
+        .align_y(Alignment::Center)
+        .width(Length::Fill);
+
+    column![header, divider_line()].spacing(8).into()
+}
+
 fn action_status_card(title: &'static str, detail: &str) -> Element<'static, Message> {
     container(
         column![
@@ -1359,6 +1466,51 @@ fn primary_action_button(
         .on_press(message)
 }
 
+fn open_code_go_setup_card(cookie_header: &str, workspace_id: &str) -> Element<'static, Message> {
+    let actions = column![
+        primary_action_button(
+            "Save & refresh",
+            provider_accent(ProviderKind::OpenCodeGo),
+            Message::SaveOpenCodeGoSettings,
+        ),
+        row![
+            text_inline_button("Open OpenCode Go", Message::OpenOpenCodeGo),
+            text_inline_button("Clear", Message::ClearOpenCodeGoSettings),
+        ]
+        .spacing(10)
+        .align_y(Alignment::Center),
+    ]
+    .spacing(8);
+
+    container(
+        column![
+            text("Manual Cookie fallback").size(13).color(color_text()),
+            text("Usage Radar will try to import your OpenCode Go session from Chrome, Brave, or Edge on Windows. Paste a Cookie header here only if that fails. Workspace ID is optional.")
+                .size(11)
+                .color(color_muted()),
+            text("Cookie header").size(11).color(color_text()),
+            text_input("auth=...; __Host-auth=...", cookie_header)
+                .on_input(Message::OpenCodeGoCookieHeaderChanged)
+                .padding([8, 10])
+                .size(12),
+            text("Workspace ID (optional)").size(11).color(color_text()),
+            text_input("wrk_... or workspace URL", workspace_id)
+                .on_input(Message::OpenCodeGoWorkspaceIdChanged)
+                .padding([8, 10])
+                .size(12),
+            text("If this field is filled in, Usage Radar uses it instead of browser auto import. You can also set OPENCODE_GO_COOKIE_HEADER or edit config.json directly if you prefer.")
+                .size(10)
+                .color(color_muted()),
+            actions,
+        ]
+        .spacing(7),
+    )
+    .width(Length::Fill)
+    .padding(10)
+    .style(|_theme| provider_card_style(color_border()))
+    .into()
+}
+
 fn inline_action_button(
     icon: LucideIcon,
     label: &'static str,
@@ -1395,6 +1547,16 @@ fn code_copy_button(message: Message) -> iced::widget::Button<'static, Message> 
     .padding(0)
     .style(code_copy_button_style)
     .on_press(message)
+}
+
+fn text_inline_button(
+    label: &'static str,
+    message: Message,
+) -> iced::widget::Button<'static, Message> {
+    button(text(label).size(11))
+        .padding([3, 0])
+        .style(inline_action_button_style)
+        .on_press(message)
 }
 
 fn toolbar_icon_button(
@@ -1550,6 +1712,17 @@ fn display_note(note: String) -> String {
 
 fn technical_detail_note(error: &str) -> String {
     format!("{TECHNICAL_DETAIL_PREFIX} {error}")
+}
+
+fn normalize_optional_config_value(value: Option<String>) -> Option<String> {
+    let value = value?;
+    let trimmed = value.trim();
+
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
 }
 
 fn format_reset_text(reset_at: Option<SystemTime>) -> Option<String> {
