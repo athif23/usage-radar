@@ -10,6 +10,8 @@ pub struct AppConfig {
     pub selected_provider: Option<ProviderKind>,
     pub refresh_minutes: u64,
     pub start_in_tray: bool,
+    pub opencode_go_cookie_header: Option<String>,
+    pub opencode_go_workspace_id: Option<String>,
 }
 
 impl Default for AppConfig {
@@ -18,6 +20,8 @@ impl Default for AppConfig {
             selected_provider: None,
             refresh_minutes: 5,
             start_in_tray: true,
+            opencode_go_cookie_header: None,
+            opencode_go_workspace_id: None,
         }
     }
 }

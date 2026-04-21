@@ -6,5 +6,6 @@ pub enum ProviderKind {
     Codex,
     Copilot,
     ClaudeCode,
-    GeminiCli,
+    #[serde(rename = "opencode_go", alias = "gemini_cli")]
+    OpenCodeGo,
 }

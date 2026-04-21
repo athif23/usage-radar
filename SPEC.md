@@ -41,10 +41,10 @@ Rust desktop app
 ### Current target providers
 - Codex
 - GitHub Copilot
+- OpenCode Go
 
 ### Future providers
 - Claude Code
-- Gemini CLI
 
 ---
 
@@ -393,7 +393,7 @@ pub enum ProviderKind {
     Codex,
     Copilot,
     ClaudeCode,
-    GeminiCli,
+    OpenCodeGo,
 }
 ```
 

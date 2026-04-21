@@ -1,6 +1,7 @@
 pub mod codex;
 pub mod copilot;
 mod kinds;
+pub mod opencode_go;
 mod snapshot;
 
 pub use kinds::ProviderKind;
@@ -21,6 +22,10 @@ pub async fn refresh_all() -> Vec<RefreshOutcome> {
         RefreshOutcome {
             kind: ProviderKind::Copilot,
             result: copilot::fetch_snapshot().await,
+        },
+        RefreshOutcome {
+            kind: ProviderKind::OpenCodeGo,
+            result: opencode_go::fetch_snapshot().await,
         },
     ]
 }

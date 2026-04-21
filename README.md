@@ -30,10 +30,11 @@ Today it is tested properly on Windows, with macOS and Linux as follow-up target
 
 Instead of bouncing between dashboards, auth files, and account pages, you open the tray popup and check your remaining budget in a couple of seconds.
 
-Right now the app is Windows-first and supports:
+Right now the app supports:
 
 - Codex
 - GitHub Copilot
+- OpenCode Go (manual cookie config for now)
 
 ## Why I built it
 
@@ -59,6 +60,7 @@ Usage Radar is an unofficial utility and is not affiliated with OpenAI or GitHub
 - opens a compact popup instead of a full dashboard window
 - shows real Codex usage data
 - shows real GitHub Copilot usage data
+- shows real OpenCode Go usage data
 - caches the last known snapshot locally
 - labels stale, unavailable, and partial states honestly
 - brings the popup back to the front if it is already open behind another app
@@ -69,8 +71,8 @@ Usage Radar is an unofficial utility and is not affiliated with OpenAI or GitHub
 | --- | --- | --- | --- |
 | Codex | Working | `~/.codex/auth.json` or `CODEX_HOME/auth.json` + `https://chatgpt.com/backend-api/wham/usage` | Exact |
 | GitHub Copilot | Working | GitHub device flow + `https://api.github.com/copilot_internal/user` | Partial |
+| OpenCode Go | Working | `opencode.ai` cookie header + usage page parsing based on the CodexBar approach | Exact |
 | Claude Code | Planned | Not wired yet | — |
-| Gemini CLI | Planned | Not wired yet | — |
 
 ### What "partial" means
 
@@ -140,6 +142,7 @@ Auth details:
 - Codex auth is read from `%USERPROFILE%\.codex\auth.json` or `CODEX_HOME\auth.json`
 - GitHub Copilot uses GitHub device flow
 - The saved Copilot token is stored in Windows credential storage, not in app JSON files
+- OpenCode Go currently uses a manual cookie header via `OPENCODE_GO_COOKIE_HEADER` or `opencode_go_cookie_header` in `config.json`
 
 ## Run locally
 
@@ -148,6 +151,7 @@ Auth details:
 - Rust stable toolchain
 - Codex installed and signed in if you want Codex data
 - a GitHub account with Copilot access if you want Copilot data
+- an OpenCode Go cookie header if you want OpenCode Go data
 
 Platform note:
 
@@ -201,15 +205,15 @@ Each archive currently contains:
 - Windows is the only platform tested properly right now
 - macOS and Linux support are goals, but should be treated as untested until they are actually validated
 - provider support is only as stable as the upstream surfaces we depend on
-- Codex and Copilot can change their auth or usage endpoints at any time
-- Claude Code and Gemini CLI are planned, but not implemented yet
+- Codex, Copilot, and OpenCode Go can change their auth or usage surfaces at any time
+- Claude Code is planned, but not implemented yet
 - the settings/config UI is still minimal
 
 ## Roadmap
 
 Near-term work:
 
-- add more providers, starting with Claude Code and Gemini
+- add more providers, starting with Claude Code
 - add a real settings/config page instead of keeping everything implicit
 - make it easier to connect or disable providers cleanly
 - explore custom provider support so people can define their own provider integrations

@@ -725,8 +725,8 @@ impl App {
             !self.panel.show_about && self.panel.selected_provider == Some(ProviderKind::Codex);
         let copilot_active =
             !self.panel.show_about && self.panel.selected_provider == Some(ProviderKind::Copilot);
-        let gemini_active =
-            !self.panel.show_about && self.panel.selected_provider == Some(ProviderKind::GeminiCli);
+        let opencode_active = !self.panel.show_about
+            && self.panel.selected_provider == Some(ProviderKind::OpenCodeGo);
         let claude_active = !self.panel.show_about
             && self.panel.selected_provider == Some(ProviderKind::ClaudeCode);
 
@@ -753,11 +753,11 @@ impl App {
                 provider_accent(ProviderKind::Copilot),
             ),
             page_tab_button(
-                "Gemini",
-                TabIcon::Gemini,
-                gemini_active,
-                Message::SelectPage(Some(ProviderKind::GeminiCli)),
-                provider_accent(ProviderKind::GeminiCli),
+                "OpenCode",
+                TabIcon::OpenCode,
+                opencode_active,
+                Message::SelectPage(Some(ProviderKind::OpenCodeGo)),
+                provider_accent(ProviderKind::OpenCodeGo),
             ),
             page_tab_button(
                 "Claude",
@@ -788,6 +788,7 @@ impl App {
         column![
             provider_card(self.provider_card_model(ProviderKind::Codex)),
             provider_card(self.provider_card_model(ProviderKind::Copilot)),
+            provider_card(self.provider_card_model(ProviderKind::OpenCodeGo)),
         ]
         .spacing(10)
         .into()
@@ -873,7 +874,7 @@ impl App {
                 .size(13)
                 .color(color_text()),
             text(
-                "Codex is wired first. Copilot uses GitHub sign-in plus GitHub's Copilot usage API. Claude and Gemini stay honest until trustworthy sources are implemented."
+                "Codex uses the real usage endpoint, Copilot uses GitHub sign-in plus GitHub's usage API, and OpenCode Go uses a manual opencode.ai cookie header for now. Claude stays placeholder until it has a trustworthy source."
             )
             .size(12)
             .color(color_muted()),
@@ -971,6 +972,17 @@ impl App {
                         "Use the Copilot page to sign in with GitHub before Usage Radar reads Copilot usage."
                             .to_string()
                     }),
+                },
+                ProviderKind::OpenCodeGo => ProviderCardModel {
+                    title,
+                    accent,
+                    subtitle: None,
+                    sections: Vec::new(),
+                    headline: Some("OpenCode Go not connected yet".to_string()),
+                    detail: Some(
+                        "Add OPENCODE_GO_COOKIE_HEADER or opencode_go_cookie_header in config.json to connect OpenCode Go until the settings page lands."
+                            .to_string(),
+                    ),
                 },
                 _ => ProviderCardModel {
                     title,
@@ -1086,7 +1098,7 @@ enum TabIcon {
     Home,
     Codex,
     Copilot,
-    Gemini,
+    OpenCode,
     Claude,
 }
 
@@ -1178,8 +1190,8 @@ fn tab_icon_handle(icon: TabIcon) -> svg::Handle {
         TabIcon::Copilot => {
             svg::Handle::from_memory(include_bytes!("../../assets/githubcopilot.svg"))
         }
-        TabIcon::Gemini => {
-            svg::Handle::from_memory(include_bytes!("../../assets/googlegemini.svg"))
+        TabIcon::OpenCode => {
+            svg::Handle::from_memory(include_bytes!("../../assets/opencode-logo-dark.svg"))
         }
         TabIcon::Claude => svg::Handle::from_memory(include_bytes!("../../assets/claude.svg")),
     }
@@ -1458,7 +1470,7 @@ fn provider_ui_label(kind: ProviderKind) -> &'static str {
         ProviderKind::Codex => "Codex",
         ProviderKind::Copilot => "Copilot",
         ProviderKind::ClaudeCode => "Claude",
-        ProviderKind::GeminiCli => "Gemini",
+        ProviderKind::OpenCodeGo => "OpenCode Go",
     }
 }
 
@@ -1835,7 +1847,7 @@ fn provider_accent(kind: ProviderKind) -> Color {
         ProviderKind::Codex => color_rgb(67, 113, 239),
         ProviderKind::Copilot => color_rgb(46, 169, 79),
         ProviderKind::ClaudeCode => color_rgb(176, 131, 71),
-        ProviderKind::GeminiCli => color_rgb(132, 108, 239),
+        ProviderKind::OpenCodeGo => color_rgb(207, 206, 205),
     }
 }
 
