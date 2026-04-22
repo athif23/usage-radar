@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/usage-radar-logo.svg" alt="Usage Radar logo" width="132" />
+  <img src="assets/usage-radar-256x256.png" alt="Usage Radar logo" width="132" />
 </p>
 
 <h1 align="center">Usage Radar</h1>
