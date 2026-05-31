@@ -929,10 +929,16 @@ impl App {
             return self.open_code_go_page_view();
         }
 
-        container(column![provider_panel(self.provider_card_model(kind), false, true)].spacing(8))
-            .width(Length::Fill)
-            .padding(Padding::ZERO.top(8.0).left(8.0).right(8.0))
-            .into()
+        container(
+            column![
+                provider_page_header(provider_ui_label(kind)),
+                provider_panel(self.provider_card_model(kind), false, false)
+            ]
+            .spacing(8),
+        )
+        .width(Length::Fill)
+        .padding(Padding::ZERO.top(8.0).left(8.0).right(8.0))
+        .into()
     }
 
     fn copilot_page_view(&self) -> Element<'_, Message> {
@@ -1633,7 +1639,11 @@ fn copilot_page_header(has_saved_token: bool) -> Element<'static, Message> {
 }
 
 fn open_code_go_page_header() -> Element<'static, Message> {
-    let header = row![text("OpenCode Go").size(15).color(color_text())]
+    provider_page_header("OpenCode Go")
+}
+
+fn provider_page_header(title: &'static str) -> Element<'static, Message> {
+    let header = row![text(title).size(15).color(color_text())]
         .align_y(Alignment::Center)
         .width(Length::Fill);
 
