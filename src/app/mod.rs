@@ -1057,7 +1057,7 @@ impl App {
             section_header("Settings"),
             settings_card(column![
                 text("Refresh").size(13).color(color_text()),
-                text("Choose how often Usage Radar checks providers in the background.")
+                text("Choose the background interval. Manual still refreshes when you open the popup or press refresh.")
                     .size(11)
                     .color(color_muted()),
                 refresh_options,
@@ -1066,7 +1066,7 @@ impl App {
                 text("Startup").size(13).color(color_text()),
                 setting_toggle_row(
                     "Start in tray",
-                    "Hide the popup on launch when the tray icon is available.",
+                    "Hide the popup on launch when the tray icon is available. Applies on next launch.",
                     self.config.start_in_tray,
                     Message::ToggleStartInTray,
                 ),

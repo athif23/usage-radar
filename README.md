@@ -63,6 +63,7 @@ Usage Radar is an unofficial utility and is not affiliated with OpenAI or GitHub
 - shows real OpenCode Go usage data
 - caches the last known snapshot locally
 - labels stale, unavailable, and partial states honestly
+- includes a small settings view for refresh timing, startup behavior, and provider visibility
 - brings the popup back to the front if it is already open behind another app
 
 ## Provider support
@@ -209,7 +210,7 @@ Each archive currently contains:
 - provider support is only as stable as the upstream surfaces we depend on
 - Codex, Copilot, and OpenCode Go can change their auth or usage surfaces at any time
 - Claude Code is planned, but not implemented yet
-- the settings/config UI is still minimal
+- the settings UI is intentionally small and focused on daily-use controls
 
 ## Roadmap
 
