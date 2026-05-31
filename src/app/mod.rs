@@ -99,6 +99,7 @@ impl App {
             Message::OpenConfigFolder => self.open_config_folder(),
             Message::SetRefreshMinutes(minutes) => self.set_refresh_minutes(minutes),
             Message::ToggleStartInTray => self.toggle_start_in_tray(),
+            Message::ToggleHomeUrgencySort => self.toggle_home_urgency_sort(),
             Message::ToggleProvider(kind) => self.toggle_provider(kind),
             Message::OpenOpenCodeGo => self.open_open_code_go(),
             Message::ShowOpenCodeGoSetup => {
@@ -371,6 +372,12 @@ impl App {
 
     fn toggle_start_in_tray(&mut self) -> Task<Message> {
         self.config.start_in_tray = !self.config.start_in_tray;
+        self.persist_config();
+        Task::none()
+    }
+
+    fn toggle_home_urgency_sort(&mut self) -> Task<Message> {
+        self.config.sort_home_by_urgency = !self.config.sort_home_by_urgency;
         self.persist_config();
         Task::none()
     }
@@ -894,7 +901,10 @@ impl App {
     fn home_page_view(&self) -> Element<'_, Message> {
         let mut body = column!().spacing(10);
         let mut providers = self.enabled_refresh_providers();
-        providers::urgency::sort_by_usage_urgency(&mut providers, &self.cache.providers);
+
+        if self.config.sort_home_by_urgency {
+            providers::urgency::sort_by_usage_urgency(&mut providers, &self.cache.providers);
+        }
 
         for kind in providers.iter().copied() {
             body = body.push(provider_card(self.provider_card_model(kind)));
@@ -1059,6 +1069,15 @@ impl App {
                     .size(11)
                     .color(color_muted()),
                 refresh_options,
+            ]),
+            settings_card(column![
+                text("Home").size(13).color(color_text()),
+                setting_toggle_row(
+                    "Sort by urgency",
+                    "Move the most constrained provider to the top. Off keeps provider order stable.",
+                    self.config.sort_home_by_urgency,
+                    Message::ToggleHomeUrgencySort,
+                ),
             ]),
             settings_card(column![
                 text("Startup").size(13).color(color_text()),

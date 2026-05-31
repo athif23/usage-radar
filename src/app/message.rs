@@ -17,6 +17,7 @@ pub enum Message {
     OpenConfigFolder,
     SetRefreshMinutes(u64),
     ToggleStartInTray,
+    ToggleHomeUrgencySort,
     ToggleProvider(ProviderKind),
     OpenOpenCodeGo,
     ShowOpenCodeGoSetup,

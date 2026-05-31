@@ -18,6 +18,8 @@ pub struct AppConfig {
     pub refresh_minutes: u64,
     pub start_in_tray: bool,
     #[serde(default)]
+    pub sort_home_by_urgency: bool,
+    #[serde(default)]
     pub disabled_providers: Vec<ProviderKind>,
     pub opencode_go_cookie_header: Option<String>,
     pub opencode_go_workspace_id: Option<String>,
@@ -29,6 +31,7 @@ impl Default for AppConfig {
             selected_provider: None,
             refresh_minutes: 5,
             start_in_tray: true,
+            sort_home_by_urgency: false,
             disabled_providers: Vec::new(),
             opencode_go_cookie_header: None,
             opencode_go_workspace_id: None,
