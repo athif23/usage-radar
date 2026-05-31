@@ -13,19 +13,19 @@ pub struct RefreshOutcome {
     pub result: Result<ProviderSnapshot, String>,
 }
 
-pub async fn refresh_all() -> Vec<RefreshOutcome> {
-    vec![
-        RefreshOutcome {
-            kind: ProviderKind::Codex,
-            result: codex::fetch_snapshot().await,
-        },
-        RefreshOutcome {
-            kind: ProviderKind::Copilot,
-            result: copilot::fetch_snapshot().await,
-        },
-        RefreshOutcome {
-            kind: ProviderKind::OpenCodeGo,
-            result: opencode_go::fetch_snapshot().await,
-        },
-    ]
+pub async fn refresh_selected(providers: Vec<ProviderKind>) -> Vec<RefreshOutcome> {
+    let mut outcomes = Vec::new();
+
+    for kind in providers {
+        let result = match kind {
+            ProviderKind::Codex => codex::fetch_snapshot().await,
+            ProviderKind::Copilot => copilot::fetch_snapshot().await,
+            ProviderKind::OpenCodeGo => opencode_go::fetch_snapshot().await,
+            ProviderKind::ClaudeCode => continue,
+        };
+
+        outcomes.push(RefreshOutcome { kind, result });
+    }
+
+    outcomes
 }

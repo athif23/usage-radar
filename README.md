@@ -213,14 +213,26 @@ Each archive currently contains:
 
 ## Roadmap
 
-Near-term work:
+Now:
 
-- add more providers, starting with Claude Code
-- add a real settings/config page instead of keeping everything implicit
-- make it easier to connect or disable providers cleanly
-- explore custom provider support so people can define their own provider integrations
-- expand beyond Windows and start validating the app on macOS and Linux
-- keep polishing the popup so it feels more like a finished tray utility and less like a dev tool
+- sort providers by current usage urgency
+- show warning and critical state in the tray icon
+- add a small working settings view
+- let users enable or disable providers they do not track
+- make stale and unavailable states easier to act on
+- improve Codex first-run and auth guidance
+
+Next:
+
+- add lightweight local cost tracking for Codex
+- add compact Codex account management
+- add more providers after the core provider flow is solid
+
+Later:
+
+- validate macOS and Linux behavior
+- explore custom provider support
+- keep polishing the popup so it feels like a finished tray utility
 
 ## Contributing
 

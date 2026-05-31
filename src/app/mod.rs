@@ -29,6 +29,12 @@ pub use self::state::App;
 use self::state::{FileLoadState, RefreshReason};
 
 const STALE_GRACE: Duration = Duration::from_secs(30 * 60);
+const TRACKABLE_PROVIDERS: [ProviderKind; 3] = [
+    ProviderKind::Codex,
+    ProviderKind::Copilot,
+    ProviderKind::OpenCodeGo,
+];
+const REFRESH_INTERVAL_OPTIONS: [u64; 4] = [0, 1, 5, 15];
 
 impl App {
     pub fn boot() -> (Self, Task<Message>) {
@@ -81,9 +87,19 @@ impl App {
             Message::SelectPage(selected_provider) => self.handle_select_page(selected_provider),
             Message::OpenAbout => {
                 self.panel.show_about = true;
+                self.panel.show_settings = false;
+                Task::none()
+            }
+            Message::OpenSettings => {
+                self.panel.show_about = false;
+                self.panel.show_settings = true;
+                self.panel.show_open_code_go_setup = false;
                 Task::none()
             }
             Message::OpenConfigFolder => self.open_config_folder(),
+            Message::SetRefreshMinutes(minutes) => self.set_refresh_minutes(minutes),
+            Message::ToggleStartInTray => self.toggle_start_in_tray(),
+            Message::ToggleProvider(kind) => self.toggle_provider(kind),
             Message::OpenOpenCodeGo => self.open_open_code_go(),
             Message::ShowOpenCodeGoSetup => {
                 self.panel.show_open_code_go_setup = true;
@@ -335,6 +351,7 @@ impl App {
 
     fn handle_select_page(&mut self, selected_provider: Option<ProviderKind>) -> Task<Message> {
         self.panel.show_about = false;
+        self.panel.show_settings = false;
 
         if selected_provider != Some(ProviderKind::OpenCodeGo) {
             self.panel.show_open_code_go_setup = false;
@@ -344,6 +361,41 @@ impl App {
         self.config.selected_provider = selected_provider;
         self.persist_config();
         Task::none()
+    }
+
+    fn set_refresh_minutes(&mut self, minutes: u64) -> Task<Message> {
+        self.config.refresh_minutes = minutes;
+        self.persist_config();
+        Task::none()
+    }
+
+    fn toggle_start_in_tray(&mut self) -> Task<Message> {
+        self.config.start_in_tray = !self.config.start_in_tray;
+        self.persist_config();
+        Task::none()
+    }
+
+    fn toggle_provider(&mut self, kind: ProviderKind) -> Task<Message> {
+        if let Some(index) = self
+            .config
+            .disabled_providers
+            .iter()
+            .position(|disabled| *disabled == kind)
+        {
+            self.config.disabled_providers.remove(index);
+            self.persist_config();
+            self.request_refresh(RefreshReason::Manual)
+        } else {
+            self.config.disabled_providers.push(kind);
+
+            if self.panel.selected_provider == Some(kind) {
+                self.panel.selected_provider = None;
+                self.config.selected_provider = None;
+            }
+
+            self.persist_config();
+            Task::none()
+        }
     }
 
     fn start_panel_drag(&mut self) -> Task<Message> {
@@ -572,7 +624,11 @@ impl App {
         self.refresh.last_started_at = Some(SystemTime::now());
         self.refresh.last_error = None;
 
-        Task::perform(providers::refresh_all(), Message::RefreshFinished)
+        let providers = self.enabled_refresh_providers();
+        Task::perform(
+            providers::refresh_selected(providers),
+            Message::RefreshFinished,
+        )
     }
 
     fn handle_refresh_finished(
@@ -771,61 +827,61 @@ impl App {
     }
 
     fn top_tabs_view(&self) -> Element<'_, Message> {
-        let home_active = !self.panel.show_about && self.panel.selected_provider.is_none();
+        let provider_page_active = !self.panel.show_about && !self.panel.show_settings;
+        let home_active = provider_page_active && self.panel.selected_provider.is_none();
         let codex_active =
-            !self.panel.show_about && self.panel.selected_provider == Some(ProviderKind::Codex);
+            provider_page_active && self.panel.selected_provider == Some(ProviderKind::Codex);
         let copilot_active =
-            !self.panel.show_about && self.panel.selected_provider == Some(ProviderKind::Copilot);
-        let opencode_active = !self.panel.show_about
-            && self.panel.selected_provider == Some(ProviderKind::OpenCodeGo);
-        let claude_active = !self.panel.show_about
-            && self.panel.selected_provider == Some(ProviderKind::ClaudeCode);
+            provider_page_active && self.panel.selected_provider == Some(ProviderKind::Copilot);
+        let opencode_active =
+            provider_page_active && self.panel.selected_provider == Some(ProviderKind::OpenCodeGo);
+        let mut tabs = row![page_tab_button(
+            "Home",
+            TabIcon::Home,
+            home_active,
+            Message::SelectPage(None),
+            accent_home(),
+        ),]
+        .spacing(4)
+        .align_y(Alignment::Start);
 
-        let tabs = row![
-            page_tab_button(
-                "Home",
-                TabIcon::Home,
-                home_active,
-                Message::SelectPage(None),
-                accent_home(),
-            ),
-            page_tab_button(
+        if self.provider_enabled(ProviderKind::Codex) {
+            tabs = tabs.push(page_tab_button(
                 "Codex",
                 TabIcon::Codex,
                 codex_active,
                 Message::SelectPage(Some(ProviderKind::Codex)),
                 provider_accent(ProviderKind::Codex),
-            ),
-            page_tab_button(
+            ));
+        }
+
+        if self.provider_enabled(ProviderKind::Copilot) {
+            tabs = tabs.push(page_tab_button(
                 "Copilot",
                 TabIcon::Copilot,
                 copilot_active,
                 Message::SelectPage(Some(ProviderKind::Copilot)),
                 provider_accent(ProviderKind::Copilot),
-            ),
-            page_tab_button(
+            ));
+        }
+
+        if self.provider_enabled(ProviderKind::OpenCodeGo) {
+            tabs = tabs.push(page_tab_button(
                 "Go",
                 TabIcon::OpenCode,
                 opencode_active,
                 Message::SelectPage(Some(ProviderKind::OpenCodeGo)),
                 provider_accent(ProviderKind::OpenCodeGo),
-            ),
-            page_tab_button(
-                "Claude",
-                TabIcon::Claude,
-                claude_active,
-                Message::SelectPage(Some(ProviderKind::ClaudeCode)),
-                provider_accent(ProviderKind::ClaudeCode),
-            ),
-        ]
-        .spacing(4)
-        .align_y(Alignment::Start);
+            ));
+        }
 
         column![tabs, divider_line()].spacing(4).into()
     }
 
     fn page_content_view(&self) -> Element<'_, Message> {
-        if self.panel.show_about {
+        if self.panel.show_settings {
+            self.settings_page_view()
+        } else if self.panel.show_about {
             self.about_page_view()
         } else {
             match self.panel.selected_provider {
@@ -836,13 +892,24 @@ impl App {
     }
 
     fn home_page_view(&self) -> Element<'_, Message> {
-        column![
-            provider_card(self.provider_card_model(ProviderKind::Codex)),
-            provider_card(self.provider_card_model(ProviderKind::Copilot)),
-            provider_card(self.provider_card_model(ProviderKind::OpenCodeGo)),
-        ]
-        .spacing(10)
-        .into()
+        let mut body = column!().spacing(10);
+        let mut enabled_count = 0;
+
+        for kind in TRACKABLE_PROVIDERS {
+            if self.provider_enabled(kind) {
+                enabled_count += 1;
+                body = body.push(provider_card(self.provider_card_model(kind)));
+            }
+        }
+
+        if enabled_count == 0 {
+            body = body.push(action_status_card(
+                "No providers enabled",
+                "Open Settings and enable at least one provider to start checking usage.",
+            ));
+        }
+
+        body.into()
     }
 
     fn provider_page_view(&self, kind: ProviderKind) -> Element<'_, Message> {
@@ -966,6 +1033,67 @@ impl App {
             .into()
     }
 
+    fn settings_page_view(&self) -> Element<'_, Message> {
+        let mut refresh_options = row!().spacing(6).align_y(Alignment::Center);
+        for minutes in REFRESH_INTERVAL_OPTIONS {
+            refresh_options = refresh_options.push(setting_choice_button(
+                refresh_interval_label(minutes),
+                self.config.refresh_minutes == minutes,
+                Message::SetRefreshMinutes(minutes),
+            ));
+        }
+
+        let mut provider_toggles = column!().spacing(6);
+        for kind in TRACKABLE_PROVIDERS {
+            provider_toggles = provider_toggles.push(setting_toggle_row(
+                provider_ui_label(kind),
+                provider_settings_detail(kind),
+                self.provider_enabled(kind),
+                Message::ToggleProvider(kind),
+            ));
+        }
+
+        let body = column![
+            section_header("Settings"),
+            settings_card(column![
+                text("Refresh").size(13).color(color_text()),
+                text("Choose how often Usage Radar checks providers in the background.")
+                    .size(11)
+                    .color(color_muted()),
+                refresh_options,
+            ]),
+            settings_card(column![
+                text("Startup").size(13).color(color_text()),
+                setting_toggle_row(
+                    "Start in tray",
+                    "Hide the popup on launch when the tray icon is available.",
+                    self.config.start_in_tray,
+                    Message::ToggleStartInTray,
+                ),
+            ]),
+            settings_card(column![
+                text("Providers").size(13).color(color_text()),
+                text("Disabled providers stay out of Home and background refresh.")
+                    .size(11)
+                    .color(color_muted()),
+                provider_toggles,
+            ]),
+            settings_card(column![
+                text("Files").size(13).color(color_text()),
+                text("Open the local Usage Radar folder for config and troubleshooting.")
+                    .size(11)
+                    .color(color_muted()),
+                text_inline_button("Open config folder", Message::OpenConfigFolder),
+            ]),
+        ]
+        .spacing(10);
+
+        container(body)
+            .width(Length::Fill)
+            .padding(Padding::ZERO.top(8.0).left(8.0).right(8.0))
+            .into()
+    }
+
     fn about_page_view(&self) -> Element<'_, Message> {
         let version = env!("CARGO_PKG_VERSION");
         let config_path = self
@@ -1014,7 +1142,7 @@ impl App {
 
     fn bottom_menu_view(&self) -> Element<'_, Message> {
         let left_actions = row![
-            toolbar_icon_button(LucideIcon::Settings, Message::OpenConfigFolder),
+            toolbar_icon_button(LucideIcon::Settings, Message::OpenSettings),
             toolbar_icon_button(
                 LucideIcon::RefreshCw,
                 Message::RefreshRequested(RefreshReason::Manual),
@@ -1179,6 +1307,17 @@ impl App {
             .find(|snapshot| snapshot.kind == kind)
     }
 
+    fn provider_enabled(&self, kind: ProviderKind) -> bool {
+        !self.config.disabled_providers.contains(&kind)
+    }
+
+    fn enabled_refresh_providers(&self) -> Vec<ProviderKind> {
+        TRACKABLE_PROVIDERS
+            .into_iter()
+            .filter(|kind| self.provider_enabled(*kind))
+            .collect()
+    }
+
     fn open_code_go_setup_visible(&self, snapshot: Option<&ProviderSnapshot>) -> bool {
         self.panel.show_open_code_go_setup
             || snapshot
@@ -1286,7 +1425,6 @@ enum TabIcon {
     Codex,
     Copilot,
     OpenCode,
-    Claude,
 }
 
 fn handle_escape_key(event: Event, _status: event::Status, window: window::Id) -> Option<Message> {
@@ -1380,7 +1518,6 @@ fn tab_icon_handle(icon: TabIcon) -> svg::Handle {
         TabIcon::OpenCode => {
             svg::Handle::from_memory(include_bytes!("../../assets/opencode-logo-dark.svg"))
         }
-        TabIcon::Claude => svg::Handle::from_memory(include_bytes!("../../assets/claude.svg")),
     }
 }
 
@@ -1484,6 +1621,55 @@ fn open_code_go_page_header() -> Element<'static, Message> {
         .width(Length::Fill);
 
     column![header, divider_line()].spacing(8).into()
+}
+
+fn section_header(title: &'static str) -> Element<'static, Message> {
+    column![text(title).size(15).color(color_text()), divider_line()]
+        .spacing(8)
+        .into()
+}
+
+fn settings_card(content: iced::widget::Column<'static, Message>) -> Element<'static, Message> {
+    container(content.spacing(7))
+        .width(Length::Fill)
+        .padding(10)
+        .style(|_theme| provider_card_style(color_border()))
+        .into()
+}
+
+fn setting_toggle_row(
+    title: &'static str,
+    detail: &'static str,
+    enabled: bool,
+    message: Message,
+) -> Element<'static, Message> {
+    row![
+        column![
+            text(title).size(12).color(color_text()),
+            text(detail).size(10).color(color_muted()),
+        ]
+        .spacing(3)
+        .width(Length::Fill),
+        setting_choice_button(if enabled { "On" } else { "Off" }, enabled, message),
+    ]
+    .spacing(10)
+    .align_y(Alignment::Center)
+    .into()
+}
+
+fn setting_choice_button(
+    label: &'static str,
+    active: bool,
+    message: Message,
+) -> iced::widget::Button<'static, Message> {
+    button(
+        text(label)
+            .size(11)
+            .color(if active { color_text() } else { color_muted() }),
+    )
+    .padding([7, 10])
+    .style(move |_theme, status| setting_choice_button_style(active, status))
+    .on_press(message)
 }
 
 fn action_status_card(title: &'static str, detail: &str) -> Element<'static, Message> {
@@ -1775,6 +1961,25 @@ fn provider_ui_label(kind: ProviderKind) -> &'static str {
     }
 }
 
+fn provider_settings_detail(kind: ProviderKind) -> &'static str {
+    match kind {
+        ProviderKind::Codex => "Reads local Codex auth and usage windows.",
+        ProviderKind::Copilot => "Uses GitHub sign-in and Copilot quota data.",
+        ProviderKind::OpenCodeGo => "Uses browser import or a manual cookie fallback.",
+        ProviderKind::ClaudeCode => "Not wired yet.",
+    }
+}
+
+fn refresh_interval_label(minutes: u64) -> &'static str {
+    match minutes {
+        0 => "Manual",
+        1 => "1m",
+        5 => "5m",
+        15 => "15m",
+        _ => "Custom",
+    }
+}
+
 fn section_label(kind: ProviderKind, label: &str) -> String {
     match (kind, label) {
         (ProviderKind::Codex, "5h window") => "5h usage limit".to_string(),
@@ -2005,6 +2210,48 @@ fn inline_action_button_style(_theme: &Theme, status: button::Status) -> button:
             width: 0.0,
             radius: 6.0.into(),
             color: Color::TRANSPARENT,
+        },
+        shadow: Shadow::default(),
+    }
+}
+
+fn setting_choice_button_style(active: bool, status: button::Status) -> button::Style {
+    let mut background = if active {
+        accent_home()
+    } else {
+        surface_shell()
+    };
+    let text_color = if active { color_text() } else { color_muted() };
+    let mut border_color = if active {
+        accent_home()
+    } else {
+        color_border()
+    };
+
+    match status {
+        button::Status::Hovered => {
+            if active {
+                background = Color::from_rgba8(80, 128, 246, 1.0);
+            } else {
+                background = Color::from_rgba8(255, 255, 255, 0.06);
+                border_color = Color::from_rgb8(97, 101, 108);
+            }
+        }
+        button::Status::Pressed => {
+            if !active {
+                background = Color::from_rgba8(255, 255, 255, 0.10);
+            }
+        }
+        button::Status::Disabled | button::Status::Active => {}
+    }
+
+    button::Style {
+        background: Some(background.into()),
+        text_color,
+        border: Border {
+            width: 1.0,
+            radius: 9.0.into(),
+            color: border_color,
         },
         shadow: Shadow::default(),
     }

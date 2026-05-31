@@ -80,7 +80,10 @@ impl CopilotAuthState {
 impl App {
     pub fn from_startup(data: StartupData) -> Self {
         let mut panel = panel::State::default();
-        panel.selected_provider = data.config.selected_provider;
+        panel.selected_provider = data
+            .config
+            .selected_provider
+            .filter(|selected| !data.config.disabled_providers.contains(selected));
 
         Self {
             config: data.config,

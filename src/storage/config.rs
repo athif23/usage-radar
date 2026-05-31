@@ -5,11 +5,20 @@ use serde::{Deserialize, Serialize};
 
 use crate::providers::ProviderKind;
 
+const REFRESH_INTERVALS: [u64; 4] = [0, 1, 5, 15];
+const TRACKABLE_PROVIDERS: [ProviderKind; 3] = [
+    ProviderKind::Codex,
+    ProviderKind::Copilot,
+    ProviderKind::OpenCodeGo,
+];
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     pub selected_provider: Option<ProviderKind>,
     pub refresh_minutes: u64,
     pub start_in_tray: bool,
+    #[serde(default)]
+    pub disabled_providers: Vec<ProviderKind>,
     pub opencode_go_cookie_header: Option<String>,
     pub opencode_go_workspace_id: Option<String>,
 }
@@ -20,9 +29,29 @@ impl Default for AppConfig {
             selected_provider: None,
             refresh_minutes: 5,
             start_in_tray: true,
+            disabled_providers: Vec::new(),
             opencode_go_cookie_header: None,
             opencode_go_workspace_id: None,
         }
+    }
+}
+
+impl AppConfig {
+    fn normalize(&mut self) {
+        if !REFRESH_INTERVALS.contains(&self.refresh_minutes) {
+            self.refresh_minutes = Self::default().refresh_minutes;
+        }
+
+        self.disabled_providers
+            .retain(|provider| TRACKABLE_PROVIDERS.contains(provider));
+        self.disabled_providers
+            .sort_by_key(|provider| match provider {
+                ProviderKind::Codex => 0,
+                ProviderKind::Copilot => 1,
+                ProviderKind::OpenCodeGo => 2,
+                ProviderKind::ClaudeCode => 3,
+            });
+        self.disabled_providers.dedup();
     }
 }
 
@@ -33,8 +62,9 @@ pub fn load(path: &Path) -> Result<Option<AppConfig>, String> {
 
     let contents = fs::read_to_string(path)
         .map_err(|error| format!("Failed to read config file {}: {error}", path.display()))?;
-    let config = serde_json::from_str(&contents)
+    let mut config: AppConfig = serde_json::from_str(&contents)
         .map_err(|error| format!("Failed to parse config file {}: {error}", path.display()))?;
+    config.normalize();
 
     Ok(Some(config))
 }
