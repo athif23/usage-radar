@@ -3,6 +3,7 @@ pub mod copilot;
 mod kinds;
 pub mod opencode_go;
 mod snapshot;
+pub mod urgency;
 
 pub use kinds::ProviderKind;
 pub use snapshot::{Confidence, LimitBar, ProviderSnapshot};

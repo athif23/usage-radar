@@ -893,16 +893,14 @@ impl App {
 
     fn home_page_view(&self) -> Element<'_, Message> {
         let mut body = column!().spacing(10);
-        let mut enabled_count = 0;
+        let mut providers = self.enabled_refresh_providers();
+        providers::urgency::sort_by_usage_urgency(&mut providers, &self.cache.providers);
 
-        for kind in TRACKABLE_PROVIDERS {
-            if self.provider_enabled(kind) {
-                enabled_count += 1;
-                body = body.push(provider_card(self.provider_card_model(kind)));
-            }
+        for kind in providers.iter().copied() {
+            body = body.push(provider_card(self.provider_card_model(kind)));
         }
 
-        if enabled_count == 0 {
+        if providers.is_empty() {
             body = body.push(action_status_card(
                 "No providers enabled",
                 "Open Settings and enable at least one provider to start checking usage.",
