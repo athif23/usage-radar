@@ -8,6 +8,15 @@
 - Never present stale, partial, or estimated data as fresh or exact.
 - Prefer explicit, boring code over clever abstractions; keep names concrete and the repo calm.
 - Use `docs/plans/` for working implementation plans. Prefer one date-prefixed plan per active feature.
+- Use conventional commit messages:
+  - `feat: ...` for user-facing features
+  - `fix: ...` for bug fixes and UI consistency fixes
+  - `docs: ...` for documentation-only changes
+  - `ci: ...` for GitHub Actions and workflow changes
+  - `chore: ...` for release, version, and tooling maintenance
+  - scoped forms like `fix(opencode-go): ...` are welcome when helpful
+- Keep commit subjects lowercase after the prefix unless using a proper noun.
+- Release commits should stay as `chore: release vX.Y.Z`.
 - When verifying Iced patterns, use these references first:
   - https://book.iced.rs/index.html
   - https://docs.rs/iced/latest/iced/
