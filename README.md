@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/image.png" alt="Usage Radar app screenshot" width="520" />
+  <img src="assets/screenshot-v0.3.1.png" alt="Usage Radar app screenshot" width="520" />
 </p>
 
 Usage Radar is a tray-first desktop app for people who use tools like Codex and GitHub Copilot and want to know, quickly, what is safe to use right now.
