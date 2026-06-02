@@ -2198,19 +2198,19 @@ fn provider_sections(kind: ProviderKind, snapshot: &ProviderSnapshot) -> Vec<Pro
             .iter()
             .map(|bar| ProviderSection {
                 title: section_label(kind, &bar.label),
-                progress: bar.percent_used.clamp(0.0, 100.0),
+                progress: bar.percent_left.clamp(0.0, 100.0),
                 leading: format_percent_left(bar.percent_left),
                 trailing: format_reset_text(bar.reset_at),
-                accent: usage_accent(kind, bar.percent_used),
+                accent: remaining_accent(kind, bar.percent_left),
             })
             .collect()
     } else if let Some(bar) = snapshot.summary_bar.as_ref() {
         vec![ProviderSection {
             title: section_label(kind, &bar.label),
-            progress: bar.percent_used.clamp(0.0, 100.0),
+            progress: bar.percent_left.clamp(0.0, 100.0),
             leading: format_percent_left(bar.percent_left),
             trailing: format_reset_text(bar.reset_at),
-            accent: usage_accent(kind, bar.percent_used),
+            accent: remaining_accent(kind, bar.percent_left),
         }]
     } else {
         Vec::new()
@@ -2804,10 +2804,10 @@ fn progress_accent(kind: ProviderKind) -> Color {
     provider_accent(kind)
 }
 
-fn usage_accent(kind: ProviderKind, percent_used: f32) -> Color {
-    if percent_used >= 95.0 {
+fn remaining_accent(kind: ProviderKind, percent_left: f32) -> Color {
+    if percent_left <= 5.0 {
         color_rgb(210, 113, 75)
-    } else if percent_used >= 85.0 {
+    } else if percent_left <= 15.0 {
         color_rgb(211, 139, 83)
     } else {
         progress_accent(kind)
@@ -2832,7 +2832,7 @@ fn color_muted() -> Color {
 
 fn color_border() -> Color {
     if dark_mode_active() {
-        Color::from_rgba8(220, 210, 255, 0.14)
+        Color::from_rgba8(220, 210, 255, 0.10)
     } else {
         Color::from_rgba8(118, 107, 145, 0.22)
     }
@@ -2880,7 +2880,7 @@ fn surface_shell() -> Color {
 
 fn surface_card() -> Color {
     if dark_mode_active() {
-        Color::from_rgba8(255, 255, 255, 0.06)
+        Color::from_rgba8(255, 255, 255, 0.035)
     } else {
         Color::from_rgba8(244, 241, 255, 0.34)
     }
