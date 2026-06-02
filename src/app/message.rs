@@ -12,6 +12,7 @@ pub enum Message {
     StartPanelDrag,
     PanelFocusChanged(window::Id, bool),
     SelectPage(Option<ProviderKind>),
+    BackToMain,
     OpenAbout,
     OpenSettings,
     OpenConfigFolder,

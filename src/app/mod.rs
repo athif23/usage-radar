@@ -85,6 +85,11 @@ impl App {
             Message::StartPanelDrag => self.start_panel_drag(),
             Message::PanelFocusChanged(id, focused) => self.handle_panel_focus_changed(id, focused),
             Message::SelectPage(selected_provider) => self.handle_select_page(selected_provider),
+            Message::BackToMain => {
+                self.panel.show_about = false;
+                self.panel.show_settings = false;
+                Task::none()
+            }
             Message::OpenAbout => {
                 self.panel.show_about = true;
                 self.panel.show_settings = false;
@@ -197,18 +202,28 @@ impl App {
             panel_scrollable_style(status, self.panel.scrollbar_is_active())
         });
 
-        let layout = column![
-            self.top_tabs_view(),
-            scrollable_body,
-            self.bottom_menu_view()
-        ]
-        .spacing(8)
-        .height(Length::Fill);
+        let layout = if self.panel.show_settings || self.panel.show_about {
+            column![
+                self.auxiliary_page_header_view(),
+                scrollable_body,
+                self.bottom_menu_view()
+            ]
+            .spacing(9)
+            .height(Length::Fill)
+        } else {
+            column![
+                self.top_tabs_view(),
+                scrollable_body,
+                self.bottom_menu_view()
+            ]
+            .spacing(9)
+            .height(Length::Fill)
+        };
 
         container(layout)
             .width(Length::Fill)
             .height(Length::Fill)
-            .padding(Padding::new(10.0).bottom(5.0))
+            .padding(Padding::new(10.0).top(10.0).bottom(5.0))
             .style(panel_shell_style)
             .into()
     }
@@ -882,14 +897,14 @@ impl App {
             ));
         }
 
-        column![tabs, divider_line()].spacing(4).into()
+        column![tabs, divider_line()].spacing(5).into()
     }
 
     fn page_content_view(&self) -> Element<'_, Message> {
         if self.panel.show_settings {
-            self.settings_page_view()
+            self.settings_page_content_view()
         } else if self.panel.show_about {
-            self.about_page_view()
+            self.about_page_content_view()
         } else {
             match self.panel.selected_provider {
                 None => self.home_page_view(),
@@ -898,16 +913,37 @@ impl App {
         }
     }
 
+    fn auxiliary_page_header_view(&self) -> Element<'_, Message> {
+        let header = if self.panel.show_settings {
+            back_page_header("Settings", Some("Preferences"), None)
+        } else {
+            back_page_header(
+                "About",
+                Some("Usage Radar"),
+                Some(env!("CARGO_PKG_VERSION")),
+            )
+        };
+
+        container(header)
+            .width(Length::Fill)
+            .padding(Padding::ZERO.top(2.0).left(4.0).right(4.0))
+            .into()
+    }
+
     fn home_page_view(&self) -> Element<'_, Message> {
-        let mut body = column!().spacing(10);
+        let mut body = column!().spacing(0);
         let mut providers = self.enabled_refresh_providers();
 
         if self.config.sort_home_by_urgency {
             providers::urgency::sort_by_usage_urgency(&mut providers, &self.cache.providers);
         }
 
-        for kind in providers.iter().copied() {
-            body = body.push(provider_card(self.provider_card_model(kind)));
+        for (index, kind) in providers.iter().copied().enumerate() {
+            if index > 0 {
+                body = body.push(divider_line());
+            }
+
+            body = body.push(provider_list_row(self.provider_card_model(kind)));
         }
 
         if providers.is_empty() {
@@ -937,7 +973,7 @@ impl App {
             .spacing(8),
         )
         .width(Length::Fill)
-        .padding(Padding::ZERO.top(8.0).left(8.0).right(8.0))
+        .padding(Padding::ZERO.top(6.0).left(4.0).right(4.0))
         .into()
     }
 
@@ -982,7 +1018,7 @@ impl App {
 
         container(body)
             .width(Length::Fill)
-            .padding(Padding::ZERO.top(8.0).left(8.0).right(8.0))
+            .padding(Padding::ZERO.top(6.0).left(4.0).right(4.0))
             .into()
     }
 
@@ -1043,11 +1079,11 @@ impl App {
 
         container(body)
             .width(Length::Fill)
-            .padding(Padding::ZERO.top(8.0).left(8.0).right(8.0))
+            .padding(Padding::ZERO.top(6.0).left(4.0).right(4.0))
             .into()
     }
 
-    fn settings_page_view(&self) -> Element<'_, Message> {
+    fn settings_page_content_view(&self) -> Element<'_, Message> {
         let mut refresh_options = row!().spacing(6).align_y(Alignment::Center);
         for minutes in REFRESH_INTERVAL_OPTIONS {
             refresh_options = refresh_options.push(setting_choice_button(
@@ -1068,57 +1104,48 @@ impl App {
         }
 
         let body = column![
-            section_header("Settings"),
             settings_card(column![
                 text("Refresh").size(13).color(color_text()),
-                text("Choose the background interval. Manual still refreshes when you open the popup or press refresh.")
-                    .size(11)
-                    .color(color_muted()),
                 refresh_options,
             ]),
             settings_card(column![
-                text("Home").size(13).color(color_text()),
+                text("Providers").size(13).color(color_text()),
+                provider_toggles,
+            ]),
+            settings_card(column![
+                text("Panel").size(13).color(color_text()),
+                setting_toggle_row(
+                    "Start in tray",
+                    "Applies next launch",
+                    self.config.start_in_tray,
+                    Message::ToggleStartInTray,
+                ),
+                divider_line(),
                 setting_toggle_row(
                     "Sort by urgency",
-                    "Move the most constrained provider to the top. Off keeps provider order stable.",
+                    "Home order stays fixed unless enabled",
                     self.config.sort_home_by_urgency,
                     Message::ToggleHomeUrgencySort,
                 ),
             ]),
             settings_card(column![
-                text("Startup").size(13).color(color_text()),
-                setting_toggle_row(
-                    "Start in tray",
-                    "Hide the popup on launch when the tray icon is available. Applies on next launch.",
-                    self.config.start_in_tray,
-                    Message::ToggleStartInTray,
+                text("Files").size(13).color(color_text()),
+                settings_menu_row(
+                    LucideIcon::FolderOpen,
+                    "Open config folder",
+                    Message::OpenConfigFolder,
                 ),
             ]),
-            settings_card(column![
-                text("Providers").size(13).color(color_text()),
-                text("Disabled providers stay out of Home and background refresh.")
-                    .size(11)
-                    .color(color_muted()),
-                provider_toggles,
-            ]),
-            settings_card(column![
-                text("Files").size(13).color(color_text()),
-                text("Open the local Usage Radar folder for config and troubleshooting.")
-                    .size(11)
-                    .color(color_muted()),
-                text_inline_button("Open config folder", Message::OpenConfigFolder),
-            ]),
         ]
-        .spacing(10);
+        .spacing(9);
 
         container(body)
             .width(Length::Fill)
-            .padding(Padding::ZERO.top(8.0).left(8.0).right(8.0))
+            .padding(Padding::ZERO.top(6.0).left(4.0).right(4.0))
             .into()
     }
 
-    fn about_page_view(&self) -> Element<'_, Message> {
-        let version = env!("CARGO_PKG_VERSION");
+    fn about_page_content_view(&self) -> Element<'_, Message> {
         let config_path = self
             .startup
             .config_path
@@ -1135,31 +1162,30 @@ impl App {
             .map(|path| path.display().to_string())
             .unwrap_or_else(|| "Unavailable".to_string());
 
-        let card = column![
-            text("Usage Radar").size(18).color(color_text()),
-            text("Tray-first usage monitor for local AI tools.")
-                .size(13)
-                .color(color_text()),
-            text(
-                "Codex uses the real usage endpoint, Copilot uses GitHub sign-in plus GitHub's usage API, and OpenCode Go tries automatic browser import on Windows with a manual Cookie fallback. Claude stays placeholder until it has a trustworthy source."
-            )
-            .size(12)
-            .color(color_muted()),
-            divider_line(),
-            text(format!("Version {version}")).size(12).color(color_text()),
-            text(format!("Config: {config_path}"))
-                .size(11)
-                .color(color_muted()),
-            text(format!("Cache: {cache_path}"))
-                .size(11)
-                .color(color_muted()),
+        let body = column![
+            settings_card(column![
+                text("Tray-first usage monitor")
+                    .size(13)
+                    .color(color_text()),
+                text("Local usage visibility for Codex, Copilot, and OpenCode Go.")
+                    .size(11)
+                    .color(color_muted()),
+            ]),
+            settings_card(column![
+                text("Files").size(13).color(color_text()),
+                text(format!("Config: {config_path}"))
+                    .size(11)
+                    .color(color_muted()),
+                text(format!("Cache: {cache_path}"))
+                    .size(11)
+                    .color(color_muted()),
+            ]),
         ]
-        .spacing(6);
+        .spacing(9);
 
-        container(card)
+        container(body)
             .width(Length::Fill)
-            .padding(12)
-            .style(|_theme| provider_card_style(color_border()))
+            .padding(Padding::ZERO.top(6.0).left(4.0).right(4.0))
             .into()
     }
 
@@ -1506,14 +1532,14 @@ fn page_tab_button(
             .size(12)
             .color(if active { color_text() } else { color_muted() }),
     ]
-    .spacing(3)
+    .spacing(4)
     .align_x(alignment::Horizontal::Center)
     .width(Length::Fill);
 
     container(
         button(content)
             .width(Length::Fill)
-            .padding([6, 4])
+            .padding([7, 4])
             .style(move |_theme, status| page_tab_style(active, status))
             .on_press(message),
     )
@@ -1544,8 +1570,71 @@ fn tab_icon_handle(icon: TabIcon) -> svg::Handle {
     }
 }
 
-fn provider_card(model: ProviderCardModel) -> Element<'static, Message> {
-    provider_panel(model, true, true)
+fn provider_list_row(model: ProviderCardModel) -> Element<'static, Message> {
+    let ProviderCardModel {
+        title,
+        accent: _,
+        subtitle,
+        sections,
+        headline,
+        detail,
+    } = model;
+
+    if !sections.is_empty() {
+        let mut body = column![row![
+            text(title).size(15).color(color_text()),
+            horizontal_space(),
+            subtitle
+                .map(|value| text(value).size(11).color(color_muted()))
+                .unwrap_or_else(|| text("").size(1)),
+        ]
+        .align_y(Alignment::Center)]
+        .spacing(8);
+
+        for section in sections {
+            body = body.push(provider_list_section(section));
+        }
+
+        return container(body).width(Length::Fill).padding([10, 4]).into();
+    }
+
+    let detail_text = detail
+        .or(headline)
+        .unwrap_or_else(|| "No usage snapshot yet.".to_string());
+
+    container(
+        column![
+            text(title).size(15).color(color_text()),
+            text(detail_text).size(11).color(color_muted()),
+        ]
+        .spacing(5),
+    )
+    .width(Length::Fill)
+    .padding([10, 4])
+    .into()
+}
+
+fn provider_list_section(section: ProviderSection) -> Element<'static, Message> {
+    column![
+        row![
+            text(section.title).size(12).color(color_text()),
+            horizontal_space(),
+            text(
+                section
+                    .trailing
+                    .unwrap_or_else(|| "Reset unknown".to_string())
+            )
+            .size(11)
+            .color(color_muted()),
+        ]
+        .align_y(Alignment::Center),
+        progress_bar(0.0..=100.0, section.progress)
+            .height(6)
+            .style(move |_theme| progress_style(section.accent)),
+        text(section.leading).size(11).color(color_muted()),
+    ]
+    .spacing(5)
+    .into()
 }
 
 fn provider_panel(
@@ -1559,7 +1648,7 @@ fn provider_panel(
     if framed {
         container(body)
             .width(Length::Fill)
-            .padding(12)
+            .padding([10, 4])
             .style(move |_theme| provider_card_style(accent))
             .into()
     } else {
@@ -1571,10 +1660,10 @@ fn provider_panel_body(
     model: ProviderCardModel,
     show_title: bool,
 ) -> iced::widget::Column<'static, Message> {
-    let mut body = column!().spacing(6);
+    let mut body = column!().spacing(12);
 
     if show_title {
-        body = body.push(text(model.title).size(15).color(color_text()));
+        body = body.push(text(model.title).size(18).color(color_text()));
     }
 
     if let Some(subtitle) = model.subtitle {
@@ -1597,35 +1686,44 @@ fn provider_panel_body(
 }
 
 fn provider_section(section: ProviderSection) -> Element<'static, Message> {
+    let title_row =
+        row![text(section.title).size(14).color(color_text())].align_y(Alignment::Center);
+
     let footer: Element<'static, Message> = if let Some(trailing) = section.trailing {
         row![
-            text(section.leading).size(11).color(color_text()),
+            text(section.leading).size(12).color(color_text()),
             horizontal_space(),
-            text(trailing).size(11).color(color_muted()),
+            text(trailing).size(12).color(color_muted()),
         ]
         .align_y(Alignment::Center)
         .into()
     } else {
-        text(section.leading).size(11).color(color_text()).into()
+        text(section.leading).size(12).color(color_text()).into()
     };
 
     column![
-        text(section.title).size(13).color(color_text()),
+        title_row,
         progress_bar(0.0..=100.0, section.progress)
             .height(7)
             .style(move |_theme| progress_style(section.accent)),
         footer,
     ]
-    .spacing(5)
+    .spacing(7)
     .into()
 }
 
 fn copilot_page_header(has_saved_token: bool) -> Element<'static, Message> {
-    let mut header = row![text("Copilot").size(15).color(color_text())]
-        .align_y(Alignment::Center)
-        .width(Length::Fill);
-
-    header = header.push(horizontal_space());
+    let mut header = row![
+        column![
+            text("Copilot").size(18).color(color_text()),
+            text("Updated just now").size(12).color(color_muted()),
+        ]
+        .spacing(2),
+        horizontal_space(),
+        text("Partial").size(13).color(color_muted()),
+    ]
+    .align_y(Alignment::Center)
+    .width(Length::Fill);
 
     if has_saved_token {
         header = header.push(inline_action_button(
@@ -1643,24 +1741,51 @@ fn open_code_go_page_header() -> Element<'static, Message> {
 }
 
 fn provider_page_header(title: &'static str) -> Element<'static, Message> {
-    let header = row![text(title).size(15).color(color_text())]
-        .align_y(Alignment::Center)
-        .width(Length::Fill);
+    let header = row![
+        column![
+            text(title).size(18).color(color_text()),
+            text("Updated just now").size(12).color(color_muted()),
+        ]
+        .spacing(2),
+        horizontal_space(),
+        text("Max").size(13).color(color_muted()),
+    ]
+    .align_y(Alignment::Center)
+    .width(Length::Fill);
 
-    column![header, divider_line()].spacing(8).into()
+    column![header, divider_line()].spacing(10).into()
 }
 
-fn section_header(title: &'static str) -> Element<'static, Message> {
-    column![text(title).size(15).color(color_text()), divider_line()]
-        .spacing(8)
-        .into()
+fn back_page_header(
+    title: &'static str,
+    subtitle: Option<&'static str>,
+    trailing: Option<&'static str>,
+) -> Element<'static, Message> {
+    let mut title_column = column![text(title).size(18).color(color_text())].spacing(2);
+
+    if let Some(subtitle) = subtitle {
+        title_column = title_column.push(text(subtitle).size(12).color(color_muted()));
+    }
+
+    let back = text_icon_button(LucideIcon::ChevronLeft, "Back", Message::BackToMain);
+    let title_row = row![
+        title_column,
+        horizontal_space(),
+        trailing
+            .map(|value| text(value).size(13).color(color_muted()))
+            .unwrap_or_else(|| text("").size(1)),
+    ]
+    .align_y(Alignment::Center)
+    .width(Length::Fill);
+
+    column![back, title_row, divider_line()].spacing(7).into()
 }
 
 fn settings_card(content: iced::widget::Column<'static, Message>) -> Element<'static, Message> {
     container(content.spacing(7))
         .width(Length::Fill)
-        .padding(10)
-        .style(|_theme| provider_card_style(color_border()))
+        .padding([10, 11])
+        .style(|_theme| settings_group_style())
         .into()
 }
 
@@ -1672,15 +1797,43 @@ fn setting_toggle_row(
 ) -> Element<'static, Message> {
     row![
         column![
-            text(title).size(12).color(color_text()),
+            text(title).size(13).color(color_text()),
             text(detail).size(10).color(color_muted()),
         ]
         .spacing(3)
         .width(Length::Fill),
-        setting_choice_button(if enabled { "On" } else { "Off" }, enabled, message),
+        setting_toggle_button(enabled, message),
     ]
     .spacing(10)
     .align_y(Alignment::Center)
+    .into()
+}
+
+fn settings_menu_row(
+    icon: LucideIcon,
+    label: &'static str,
+    message: Message,
+) -> Element<'static, Message> {
+    button(
+        row![
+            text(char::from(icon).to_string())
+                .font(Font::with_name("lucide"))
+                .size(15)
+                .color(color_text()),
+            text(label).size(13).color(color_text()),
+            horizontal_space(),
+            text(char::from(LucideIcon::ChevronRight).to_string())
+                .font(Font::with_name("lucide"))
+                .size(14)
+                .color(color_muted()),
+        ]
+        .spacing(9)
+        .align_y(Alignment::Center),
+    )
+    .width(Length::Fill)
+    .padding([4, 0])
+    .style(inline_action_button_style)
+    .on_press(message)
     .into()
 }
 
@@ -1696,6 +1849,32 @@ fn setting_choice_button(
     )
     .padding([7, 10])
     .style(move |_theme, status| setting_choice_button_style(active, status))
+    .on_press(message)
+}
+
+fn setting_toggle_button(
+    enabled: bool,
+    message: Message,
+) -> iced::widget::Button<'static, Message> {
+    let knob = container(text(""))
+        .width(Length::Fixed(14.0))
+        .height(Length::Fixed(14.0))
+        .style(|_theme| toggle_knob_style());
+    let content = if enabled {
+        row![horizontal_space(), knob]
+    } else {
+        row![knob, horizontal_space()]
+    };
+
+    button(
+        container(content.align_y(Alignment::Center))
+            .width(Length::Fixed(36.0))
+            .height(Length::Fixed(20.0))
+            .padding(2)
+            .style(move |_theme| setting_toggle_style(enabled)),
+    )
+    .padding(0)
+    .style(move |_theme, status| setting_toggle_button_style(enabled, status))
     .on_press(message)
 }
 
@@ -1801,7 +1980,7 @@ fn open_code_go_connection_card(
     )
     .width(Length::Fill)
     .padding(10)
-    .style(|_theme| provider_card_style(color_border()))
+    .style(|_theme| settings_group_style())
     .into()
 }
 
@@ -1881,6 +2060,26 @@ fn inline_action_button(
     .on_press(message)
 }
 
+fn text_icon_button(
+    icon: LucideIcon,
+    label: &'static str,
+    message: Message,
+) -> iced::widget::Button<'static, Message> {
+    button(
+        row![
+            text(char::from(icon).to_string())
+                .font(Font::with_name("lucide"))
+                .size(12),
+            text(label).size(11),
+        ]
+        .spacing(4)
+        .align_y(Alignment::Center),
+    )
+    .padding([2, 0])
+    .style(inline_action_button_style)
+    .on_press(message)
+}
+
 fn code_copy_button(message: Message) -> iced::widget::Button<'static, Message> {
     button(
         container(
@@ -1952,27 +2151,25 @@ fn notice_view(message: String, tone: Tone) -> Element<'static, Message> {
 }
 
 fn provider_sections(kind: ProviderKind, snapshot: &ProviderSnapshot) -> Vec<ProviderSection> {
-    let accent = progress_accent(kind);
-
     if !snapshot.detail_bars.is_empty() {
         snapshot
             .detail_bars
             .iter()
             .map(|bar| ProviderSection {
                 title: section_label(kind, &bar.label),
-                progress: bar.percent_left.clamp(0.0, 100.0),
+                progress: bar.percent_used.clamp(0.0, 100.0),
                 leading: format_percent_left(bar.percent_left),
                 trailing: format_reset_text(bar.reset_at),
-                accent,
+                accent: usage_accent(kind, bar.percent_used),
             })
             .collect()
     } else if let Some(bar) = snapshot.summary_bar.as_ref() {
         vec![ProviderSection {
             title: section_label(kind, &bar.label),
-            progress: bar.percent_left.clamp(0.0, 100.0),
+            progress: bar.percent_used.clamp(0.0, 100.0),
             leading: format_percent_left(bar.percent_left),
             trailing: format_reset_text(bar.reset_at),
-            accent,
+            accent: usage_accent(kind, bar.percent_used),
         }]
     } else {
         Vec::new()
@@ -2009,11 +2206,12 @@ fn refresh_interval_label(minutes: u64) -> &'static str {
 
 fn section_label(kind: ProviderKind, label: &str) -> String {
     match (kind, label) {
-        (ProviderKind::Codex, "5h window") => "5h usage limit".to_string(),
-        (ProviderKind::Codex, "Weekly window") => "Weekly usage".to_string(),
-        (_, "5h window") => "Current usage".to_string(),
-        (_, "Weekly window") => "Weekly usage".to_string(),
-        _ => label.to_string(),
+        (ProviderKind::Codex, "5h window") => "Session".to_string(),
+        (ProviderKind::Codex, "Weekly window") => "Weekly".to_string(),
+        (_, "5h window") => "Current".to_string(),
+        (_, "Weekly window") => "Weekly".to_string(),
+        (_, "Monthly window") => "Monthly".to_string(),
+        _ => label.trim_end_matches(" window").to_string(),
     }
 }
 
@@ -2147,20 +2345,41 @@ fn panel_shell_style(_theme: &Theme) -> iced::widget::container::Style {
         border: Border {
             width: 1.0,
             radius: 0.0.into(),
-            color: color_border(),
+            color: Color::from_rgba8(255, 255, 255, 0.24),
         },
-        shadow: Shadow::default(),
+        shadow: Shadow {
+            color: Color::from_rgba8(20, 16, 42, 0.24),
+            offset: iced::Vector::new(0.0, 10.0),
+            blur_radius: 24.0,
+        },
         ..Default::default()
     }
 }
 
 fn provider_card_style(_accent: Color) -> iced::widget::container::Style {
     iced::widget::container::Style {
+        background: Some(Color::TRANSPARENT.into()),
+        border: Border {
+            width: 0.0,
+            radius: 0.0.into(),
+            color: Color::TRANSPARENT,
+        },
+        ..Default::default()
+    }
+}
+
+fn settings_group_style() -> iced::widget::container::Style {
+    iced::widget::container::Style {
         background: Some(surface_card().into()),
         border: Border {
             width: 1.0,
             radius: 14.0.into(),
             color: color_border(),
+        },
+        shadow: Shadow {
+            color: Color::from_rgba8(255, 255, 255, 0.10),
+            offset: iced::Vector::new(0.0, 1.0),
+            blur_radius: 0.0,
         },
         ..Default::default()
     }
@@ -2177,13 +2396,13 @@ fn page_tab_style(active: bool, status: button::Status) -> button::Style {
     match status {
         button::Status::Hovered => {
             if !active {
-                background = Color::from_rgba8(255, 255, 255, 0.04);
+                background = Color::from_rgba8(255, 255, 255, 0.18);
                 text_color = color_text();
             }
         }
         button::Status::Pressed => {
             if !active {
-                background = Color::from_rgba8(255, 255, 255, 0.07);
+                background = Color::from_rgba8(255, 255, 255, 0.24);
             }
         }
         button::Status::Disabled => {
@@ -2197,7 +2416,7 @@ fn page_tab_style(active: bool, status: button::Status) -> button::Style {
         text_color,
         border: Border {
             width: 0.0,
-            radius: 12.0.into(),
+            radius: 11.0.into(),
             color: Color::TRANSPARENT,
         },
         shadow: Shadow::default(),
@@ -2281,6 +2500,72 @@ fn setting_choice_button_style(active: bool, status: button::Status) -> button::
             color: border_color,
         },
         shadow: Shadow::default(),
+    }
+}
+
+fn setting_toggle_button_style(enabled: bool, status: button::Status) -> button::Style {
+    let background = match status {
+        button::Status::Hovered => Color::from_rgba8(255, 255, 255, 0.12),
+        button::Status::Pressed => Color::from_rgba8(255, 255, 255, 0.18),
+        button::Status::Disabled | button::Status::Active => {
+            if enabled {
+                Color::TRANSPARENT
+            } else {
+                Color::TRANSPARENT
+            }
+        }
+    };
+
+    button::Style {
+        background: Some(background.into()),
+        text_color: color_text(),
+        border: Border {
+            width: 0.0,
+            radius: 999.0.into(),
+            color: Color::TRANSPARENT,
+        },
+        shadow: Shadow::default(),
+    }
+}
+
+fn setting_toggle_style(enabled: bool) -> iced::widget::container::Style {
+    iced::widget::container::Style {
+        background: Some(
+            if enabled {
+                accent_home()
+            } else {
+                Color::from_rgba8(112, 104, 130, 0.34)
+            }
+            .into(),
+        ),
+        border: Border {
+            width: 1.0,
+            radius: 999.0.into(),
+            color: if enabled {
+                Color::from_rgba8(255, 255, 255, 0.20)
+            } else {
+                Color::from_rgba8(94, 87, 111, 0.38)
+            },
+        },
+        shadow: Shadow::default(),
+        ..Default::default()
+    }
+}
+
+fn toggle_knob_style() -> iced::widget::container::Style {
+    iced::widget::container::Style {
+        background: Some(Color::from_rgba8(255, 255, 255, 0.92).into()),
+        border: Border {
+            width: 0.0,
+            radius: 999.0.into(),
+            color: Color::TRANSPARENT,
+        },
+        shadow: Shadow {
+            color: Color::from_rgba8(68, 56, 92, 0.22),
+            offset: iced::Vector::new(0.0, 1.0),
+            blur_radius: 2.0,
+        },
+        ..Default::default()
     }
 }
 
@@ -2430,54 +2715,61 @@ fn accent_home() -> Color {
 
 fn provider_accent(kind: ProviderKind) -> Color {
     match kind {
-        ProviderKind::Codex => color_rgb(67, 113, 239),
-        ProviderKind::Copilot => color_rgb(46, 169, 79),
+        ProviderKind::Codex => color_rgb(47, 121, 246),
+        ProviderKind::Copilot => color_rgb(62, 170, 142),
         ProviderKind::ClaudeCode => color_rgb(176, 131, 71),
-        ProviderKind::OpenCodeGo => color_rgb(207, 206, 205),
+        ProviderKind::OpenCodeGo => color_rgb(116, 128, 154),
     }
 }
 
 fn progress_accent(kind: ProviderKind) -> Color {
-    match kind {
-        ProviderKind::OpenCodeGo => color_rgb(27, 24, 24),
-        _ => provider_accent(kind),
+    provider_accent(kind)
+}
+
+fn usage_accent(kind: ProviderKind, percent_used: f32) -> Color {
+    if percent_used >= 95.0 {
+        color_rgb(210, 113, 75)
+    } else if percent_used >= 85.0 {
+        color_rgb(211, 139, 83)
+    } else {
+        progress_accent(kind)
     }
 }
 
 fn color_text() -> Color {
-    color_rgb(242, 244, 247)
+    color_rgb(37, 34, 46)
 }
 
 fn color_muted() -> Color {
-    color_rgb(177, 183, 191)
+    color_rgb(104, 98, 120)
 }
 
 fn color_border() -> Color {
-    color_rgb(76, 79, 85)
+    Color::from_rgba8(118, 107, 145, 0.22)
 }
 
 fn color_divider() -> Color {
-    color_rgb(67, 70, 75)
+    Color::from_rgba8(101, 91, 126, 0.20)
 }
 
 fn color_progress_track() -> Color {
-    color_rgb(69, 71, 76)
+    Color::from_rgba8(120, 110, 148, 0.18)
 }
 
 fn color_warning_text() -> Color {
-    color_rgb(236, 198, 119)
+    color_rgb(104, 65, 45)
 }
 
 fn color_warning_border() -> Color {
-    color_rgb(117, 93, 56)
+    Color::from_rgba8(158, 98, 59, 0.32)
 }
 
 fn surface_shell() -> Color {
-    color_rgb(40, 40, 42)
+    color_rgb(219, 214, 250)
 }
 
 fn surface_card() -> Color {
-    color_rgb(53, 53, 55)
+    Color::from_rgba8(244, 241, 255, 0.34)
 }
 
 fn color_rgb(red: u8, green: u8, blue: u8) -> Color {
