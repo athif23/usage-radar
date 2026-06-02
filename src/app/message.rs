@@ -3,6 +3,7 @@ use iced::window;
 use crate::app::state::RefreshReason;
 use crate::providers::copilot::DeviceCodePrompt;
 use crate::providers::{ProviderKind, RefreshOutcome};
+use crate::storage::config::AppAppearance;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -17,7 +18,8 @@ pub enum Message {
     OpenSettings,
     OpenConfigFolder,
     SetRefreshMinutes(u64),
-    ToggleStartInTray,
+    SetAppearance(AppAppearance),
+    ToggleLaunchAtStartup,
     ToggleHomeUrgencySort,
     ToggleProvider(ProviderKind),
     OpenOpenCodeGo,

@@ -18,6 +18,10 @@ pub struct AppConfig {
     pub refresh_minutes: u64,
     pub start_in_tray: bool,
     #[serde(default)]
+    pub launch_at_startup: bool,
+    #[serde(default)]
+    pub appearance: AppAppearance,
+    #[serde(default)]
     pub sort_home_by_urgency: bool,
     #[serde(default)]
     pub disabled_providers: Vec<ProviderKind>,
@@ -31,10 +35,41 @@ impl Default for AppConfig {
             selected_provider: None,
             refresh_minutes: 5,
             start_in_tray: true,
+            launch_at_startup: false,
+            appearance: AppAppearance::Light,
             sort_home_by_urgency: false,
             disabled_providers: Vec::new(),
             opencode_go_cookie_header: None,
             opencode_go_workspace_id: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AppAppearance {
+    Light,
+    Dark,
+}
+
+impl Default for AppAppearance {
+    fn default() -> Self {
+        Self::Light
+    }
+}
+
+impl AppAppearance {
+    pub fn as_u8(self) -> u8 {
+        match self {
+            Self::Light => 0,
+            Self::Dark => 1,
+        }
+    }
+
+    pub fn from_u8(value: u8) -> Self {
+        match value {
+            1 => Self::Dark,
+            _ => Self::Light,
         }
     }
 }

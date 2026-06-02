@@ -85,6 +85,8 @@ impl App {
             .selected_provider
             .filter(|selected| !data.config.disabled_providers.contains(selected));
 
+        crate::app::set_current_appearance(data.config.appearance);
+
         Self {
             config: data.config,
             cache: data.cache,

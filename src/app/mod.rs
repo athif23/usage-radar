@@ -4,6 +4,7 @@ pub mod state;
 
 use std::fs;
 use std::process::Command;
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::time::{Duration, SystemTime};
 
 use iced::widget::svg;
@@ -20,8 +21,9 @@ use tray_icon::menu::MenuEvent;
 use tray_icon::{MouseButton, MouseButtonState, TrayIconEvent};
 
 use crate::providers::{self, Confidence, ProviderKind, ProviderSnapshot};
+use crate::storage::config::AppAppearance;
 use crate::storage::{cache as cache_store, config as config_store};
-use crate::util::paths;
+use crate::util::{paths, startup as startup_util};
 
 use self::message::Message;
 use self::startup::load_startup;
@@ -35,6 +37,8 @@ const TRACKABLE_PROVIDERS: [ProviderKind; 3] = [
     ProviderKind::OpenCodeGo,
 ];
 const REFRESH_INTERVAL_OPTIONS: [u64; 4] = [0, 1, 5, 15];
+const APPEARANCE_OPTIONS: [AppAppearance; 2] = [AppAppearance::Light, AppAppearance::Dark];
+static CURRENT_APPEARANCE: AtomicU8 = AtomicU8::new(0);
 
 impl App {
     pub fn boot() -> (Self, Task<Message>) {
@@ -49,7 +53,10 @@ impl App {
     }
 
     pub fn theme(&self, _window: window::Id) -> Theme {
-        Theme::Dark
+        match self.config.appearance {
+            AppAppearance::Light => Theme::Light,
+            AppAppearance::Dark => Theme::Dark,
+        }
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
@@ -103,7 +110,8 @@ impl App {
             }
             Message::OpenConfigFolder => self.open_config_folder(),
             Message::SetRefreshMinutes(minutes) => self.set_refresh_minutes(minutes),
-            Message::ToggleStartInTray => self.toggle_start_in_tray(),
+            Message::SetAppearance(appearance) => self.set_appearance(appearance),
+            Message::ToggleLaunchAtStartup => self.toggle_launch_at_startup(),
             Message::ToggleHomeUrgencySort => self.toggle_home_urgency_sort(),
             Message::ToggleProvider(kind) => self.toggle_provider(kind),
             Message::OpenOpenCodeGo => self.open_open_code_go(),
@@ -177,6 +185,8 @@ impl App {
         if self.panel.id != Some(window_id) {
             return container(text("")).into();
         }
+
+        set_current_appearance(self.config.appearance);
 
         let mut body = column![self.page_content_view()].spacing(8);
 
@@ -385,9 +395,27 @@ impl App {
         Task::none()
     }
 
-    fn toggle_start_in_tray(&mut self) -> Task<Message> {
-        self.config.start_in_tray = !self.config.start_in_tray;
+    fn set_appearance(&mut self, appearance: AppAppearance) -> Task<Message> {
+        self.config.appearance = appearance;
+        set_current_appearance(appearance);
         self.persist_config();
+        Task::none()
+    }
+
+    fn toggle_launch_at_startup(&mut self) -> Task<Message> {
+        let next = !self.config.launch_at_startup;
+
+        match startup_util::set_launch_at_startup(next) {
+            Ok(()) => {
+                self.config.launch_at_startup = next;
+                self.config.start_in_tray = true;
+                self.persist_config();
+            }
+            Err(error) => {
+                self.runtime_notice = Some(error);
+            }
+        }
+
         Task::none()
     }
 
@@ -1093,6 +1121,15 @@ impl App {
             ));
         }
 
+        let mut appearance_options = row!().spacing(6).align_y(Alignment::Center);
+        for appearance in APPEARANCE_OPTIONS {
+            appearance_options = appearance_options.push(setting_choice_button(
+                appearance_label(appearance),
+                self.config.appearance == appearance,
+                Message::SetAppearance(appearance),
+            ));
+        }
+
         let mut provider_toggles = column!().spacing(6);
         for kind in TRACKABLE_PROVIDERS {
             provider_toggles = provider_toggles.push(setting_toggle_row(
@@ -1109,16 +1146,20 @@ impl App {
                 refresh_options,
             ]),
             settings_card(column![
+                text("Appearance").size(13).color(color_text()),
+                appearance_options,
+            ]),
+            settings_card(column![
                 text("Providers").size(13).color(color_text()),
                 provider_toggles,
             ]),
             settings_card(column![
                 text("Panel").size(13).color(color_text()),
                 setting_toggle_row(
-                    "Start in tray",
-                    "Applies next launch",
-                    self.config.start_in_tray,
-                    Message::ToggleStartInTray,
+                    "Launch at startup",
+                    "Open Usage Radar when you sign in",
+                    self.config.launch_at_startup,
+                    Message::ToggleLaunchAtStartup,
                 ),
                 divider_line(),
                 setting_toggle_row(
@@ -1857,8 +1898,8 @@ fn setting_toggle_button(
     message: Message,
 ) -> iced::widget::Button<'static, Message> {
     let knob = container(text(""))
-        .width(Length::Fixed(14.0))
-        .height(Length::Fixed(14.0))
+        .width(Length::Fixed(16.0))
+        .height(Length::Fixed(16.0))
         .style(|_theme| toggle_knob_style());
     let content = if enabled {
         row![horizontal_space(), knob]
@@ -1868,9 +1909,9 @@ fn setting_toggle_button(
 
     button(
         container(content.align_y(Alignment::Center))
-            .width(Length::Fixed(36.0))
-            .height(Length::Fixed(20.0))
-            .padding(2)
+            .width(Length::Fixed(38.0))
+            .height(Length::Fixed(22.0))
+            .padding(3)
             .style(move |_theme| setting_toggle_style(enabled)),
     )
     .padding(0)
@@ -2204,6 +2245,13 @@ fn refresh_interval_label(minutes: u64) -> &'static str {
     }
 }
 
+fn appearance_label(appearance: AppAppearance) -> &'static str {
+    match appearance {
+        AppAppearance::Light => "Light",
+        AppAppearance::Dark => "Dark",
+    }
+}
+
 fn section_label(kind: ProviderKind, label: &str) -> String {
     match (kind, label) {
         (ProviderKind::Codex, "5h window") => "Session".to_string(),
@@ -2339,6 +2387,18 @@ fn tone_colors(tone: Tone) -> ToneColors {
     }
 }
 
+pub(crate) fn set_current_appearance(appearance: AppAppearance) {
+    CURRENT_APPEARANCE.store(appearance.as_u8(), Ordering::Relaxed);
+}
+
+fn current_appearance() -> AppAppearance {
+    AppAppearance::from_u8(CURRENT_APPEARANCE.load(Ordering::Relaxed))
+}
+
+fn dark_mode_active() -> bool {
+    current_appearance() == AppAppearance::Dark
+}
+
 fn panel_shell_style(_theme: &Theme) -> iced::widget::container::Style {
     iced::widget::container::Style {
         background: Some(surface_shell().into()),
@@ -2376,11 +2436,7 @@ fn settings_group_style() -> iced::widget::container::Style {
             radius: 14.0.into(),
             color: color_border(),
         },
-        shadow: Shadow {
-            color: Color::from_rgba8(255, 255, 255, 0.10),
-            offset: iced::Vector::new(0.0, 1.0),
-            blur_radius: 0.0,
-        },
+        shadow: Shadow::default(),
         ..Default::default()
     }
 }
@@ -2396,13 +2452,13 @@ fn page_tab_style(active: bool, status: button::Status) -> button::Style {
     match status {
         button::Status::Hovered => {
             if !active {
-                background = Color::from_rgba8(255, 255, 255, 0.18);
+                background = tab_hover_background();
                 text_color = color_text();
             }
         }
         button::Status::Pressed => {
             if !active {
-                background = Color::from_rgba8(255, 255, 255, 0.24);
+                background = tab_pressed_background();
             }
         }
         button::Status::Disabled => {
@@ -2420,6 +2476,22 @@ fn page_tab_style(active: bool, status: button::Status) -> button::Style {
             color: Color::TRANSPARENT,
         },
         shadow: Shadow::default(),
+    }
+}
+
+fn tab_hover_background() -> Color {
+    if dark_mode_active() {
+        Color::from_rgba8(132, 122, 158, 0.18)
+    } else {
+        Color::from_rgba8(255, 255, 255, 0.18)
+    }
+}
+
+fn tab_pressed_background() -> Color {
+    if dark_mode_active() {
+        Color::from_rgba8(132, 122, 158, 0.24)
+    } else {
+        Color::from_rgba8(255, 255, 255, 0.26)
     }
 }
 
@@ -2503,17 +2575,23 @@ fn setting_choice_button_style(active: bool, status: button::Status) -> button::
     }
 }
 
-fn setting_toggle_button_style(enabled: bool, status: button::Status) -> button::Style {
+fn setting_toggle_button_style(_enabled: bool, status: button::Status) -> button::Style {
     let background = match status {
-        button::Status::Hovered => Color::from_rgba8(255, 255, 255, 0.12),
-        button::Status::Pressed => Color::from_rgba8(255, 255, 255, 0.18),
-        button::Status::Disabled | button::Status::Active => {
-            if enabled {
-                Color::TRANSPARENT
+        button::Status::Hovered => {
+            if dark_mode_active() {
+                Color::from_rgba8(255, 255, 255, 0.04)
             } else {
-                Color::TRANSPARENT
+                Color::from_rgba8(255, 255, 255, 0.10)
             }
         }
+        button::Status::Pressed => {
+            if dark_mode_active() {
+                Color::from_rgba8(255, 255, 255, 0.07)
+            } else {
+                Color::from_rgba8(255, 255, 255, 0.14)
+            }
+        }
+        button::Status::Disabled | button::Status::Active => Color::TRANSPARENT,
     };
 
     button::Style {
@@ -2542,7 +2620,7 @@ fn setting_toggle_style(enabled: bool) -> iced::widget::container::Style {
             width: 1.0,
             radius: 999.0.into(),
             color: if enabled {
-                Color::from_rgba8(255, 255, 255, 0.20)
+                Color::from_rgba8(47, 121, 246, 0.82)
             } else {
                 Color::from_rgba8(94, 87, 111, 0.38)
             },
@@ -2737,39 +2815,75 @@ fn usage_accent(kind: ProviderKind, percent_used: f32) -> Color {
 }
 
 fn color_text() -> Color {
-    color_rgb(37, 34, 46)
+    if dark_mode_active() {
+        color_rgb(238, 235, 247)
+    } else {
+        color_rgb(37, 34, 46)
+    }
 }
 
 fn color_muted() -> Color {
-    color_rgb(104, 98, 120)
+    if dark_mode_active() {
+        color_rgb(167, 160, 188)
+    } else {
+        color_rgb(104, 98, 120)
+    }
 }
 
 fn color_border() -> Color {
-    Color::from_rgba8(118, 107, 145, 0.22)
+    if dark_mode_active() {
+        Color::from_rgba8(220, 210, 255, 0.14)
+    } else {
+        Color::from_rgba8(118, 107, 145, 0.22)
+    }
 }
 
 fn color_divider() -> Color {
-    Color::from_rgba8(101, 91, 126, 0.20)
+    if dark_mode_active() {
+        Color::from_rgba8(220, 210, 255, 0.13)
+    } else {
+        Color::from_rgba8(101, 91, 126, 0.20)
+    }
 }
 
 fn color_progress_track() -> Color {
-    Color::from_rgba8(120, 110, 148, 0.18)
+    if dark_mode_active() {
+        Color::from_rgba8(220, 210, 255, 0.12)
+    } else {
+        Color::from_rgba8(120, 110, 148, 0.18)
+    }
 }
 
 fn color_warning_text() -> Color {
-    color_rgb(104, 65, 45)
+    if dark_mode_active() {
+        color_rgb(242, 190, 137)
+    } else {
+        color_rgb(104, 65, 45)
+    }
 }
 
 fn color_warning_border() -> Color {
-    Color::from_rgba8(158, 98, 59, 0.32)
+    if dark_mode_active() {
+        Color::from_rgba8(242, 190, 137, 0.28)
+    } else {
+        Color::from_rgba8(158, 98, 59, 0.32)
+    }
 }
 
 fn surface_shell() -> Color {
-    color_rgb(219, 214, 250)
+    if dark_mode_active() {
+        color_rgb(36, 33, 46)
+    } else {
+        color_rgb(219, 214, 250)
+    }
 }
 
 fn surface_card() -> Color {
-    Color::from_rgba8(244, 241, 255, 0.34)
+    if dark_mode_active() {
+        Color::from_rgba8(255, 255, 255, 0.06)
+    } else {
+        Color::from_rgba8(244, 241, 255, 0.34)
+    }
 }
 
 fn color_rgb(red: u8, green: u8, blue: u8) -> Color {
