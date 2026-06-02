@@ -63,7 +63,9 @@ Usage Radar is an unofficial utility and is not affiliated with OpenAI or GitHub
 - shows real OpenCode Go usage data
 - caches the last known snapshot locally
 - labels stale, unavailable, and partial states honestly
-- includes a small settings view for refresh timing, startup behavior, and provider visibility
+- includes a small settings view for refresh timing, appearance, startup behavior, provider visibility, and optional urgency sorting
+- supports light and dark mode
+- can launch at startup on Windows
 - brings the popup back to the front if it is already open behind another app
 
 ## Provider support
@@ -191,49 +193,51 @@ Latest release:
 
 - https://github.com/athif23/usage-radar/releases/latest
 
-Release archives are packaged like this:
+Release archives are produced for Windows, macOS, and Linux:
 
 ```text
 usage-radar-<version>-windows-x64.zip
+usage-radar-<version>-macos-arm64.tar.gz
+usage-radar-<version>-linux-x64.tar.gz
 ```
 
 Each archive currently contains:
 
-- `usage-radar.exe`
+- `usage-radar.exe` on Windows, or `usage-radar` on macOS/Linux
 - `README.md`
 - `LICENSE`
+
+Windows is the only platform tested properly right now. macOS and Linux artifacts are published so they can be tested, but should still be treated as early.
 
 ## Limitations
 
 - Windows is the only platform tested properly right now
-- macOS and Linux support are goals, but should be treated as untested until they are actually validated
+- macOS and Linux release artifacts are built, but should be treated as untested until they are actually validated
 - provider support is only as stable as the upstream surfaces we depend on
 - Codex, Copilot, and OpenCode Go can change their auth or usage surfaces at any time
 - Claude Code is planned, but not implemented yet
-- the settings UI is intentionally small and focused on daily-use controls
+- the settings UI is intentionally small and focused on daily-use controls, not account dashboards
 
 ## Roadmap
 
 Now:
 
-- sort providers by current usage urgency
 - show warning and critical state in the tray icon
-- add a small working settings view
-- let users enable or disable providers they do not track
 - make stale and unavailable states easier to act on
 - improve Codex first-run and auth guidance
+- keep polishing the compact tray popup
 
 Next:
 
 - add lightweight local cost tracking for Codex
 - add compact Codex account management
 - add more providers after the core provider flow is solid
+- validate macOS and Linux release artifacts
 
 Later:
 
-- validate macOS and Linux behavior
 - explore custom provider support
-- keep polishing the popup so it feels like a finished tray utility
+- consider richer provider setup flows without turning the app into a dashboard
 
 ## Contributing
 
