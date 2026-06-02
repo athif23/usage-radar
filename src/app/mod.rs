@@ -235,7 +235,7 @@ impl App {
         container(layout)
             .width(Length::Fill)
             .height(Length::Fill)
-            .padding(Padding::new(10.0).top(10.0).bottom(5.0))
+            .padding(Padding::ZERO.top(4.0).right(4.0).bottom(5.0).left(4.0))
             .style(panel_shell_style)
             .into()
     }
@@ -927,7 +927,7 @@ impl App {
             ));
         }
 
-        column![tabs, divider_line()].spacing(5).into()
+        column![tabs, divider_line()].spacing(4).into()
     }
 
     fn page_content_view(&self) -> Element<'_, Message> {
@@ -956,7 +956,7 @@ impl App {
 
         container(header)
             .width(Length::Fill)
-            .padding(Padding::ZERO.top(2.0).left(4.0).right(4.0))
+            .padding(Padding::ZERO.top(2.0).left(10.0).right(10.0))
             .into()
     }
 
@@ -983,7 +983,10 @@ impl App {
             ));
         }
 
-        body.into()
+        container(body)
+            .width(Length::Fill)
+            .padding(Padding::ZERO.top(4.0).left(10.0).right(10.0))
+            .into()
     }
 
     fn provider_page_view(&self, kind: ProviderKind) -> Element<'_, Message> {
@@ -1003,7 +1006,7 @@ impl App {
             .spacing(8),
         )
         .width(Length::Fill)
-        .padding(Padding::ZERO.top(6.0).left(4.0).right(4.0))
+        .padding(Padding::ZERO.top(6.0).left(10.0).right(10.0))
         .into()
     }
 
@@ -1048,7 +1051,7 @@ impl App {
 
         container(body)
             .width(Length::Fill)
-            .padding(Padding::ZERO.top(6.0).left(4.0).right(4.0))
+            .padding(Padding::ZERO.top(3.0).left(10.0).right(10.0))
             .into()
     }
 
@@ -1109,7 +1112,7 @@ impl App {
 
         container(body)
             .width(Length::Fill)
-            .padding(Padding::ZERO.top(6.0).left(4.0).right(4.0))
+            .padding(Padding::ZERO.top(6.0).left(10.0).right(10.0))
             .into()
     }
 
@@ -1184,7 +1187,7 @@ impl App {
 
         container(body)
             .width(Length::Fill)
-            .padding(Padding::ZERO.top(6.0).left(4.0).right(4.0))
+            .padding(Padding::ZERO.top(6.0).left(10.0).right(10.0))
             .into()
     }
 
@@ -1228,7 +1231,7 @@ impl App {
 
         container(body)
             .width(Length::Fill)
-            .padding(Padding::ZERO.top(6.0).left(4.0).right(4.0))
+            .padding(Padding::ZERO.top(6.0).left(10.0).right(10.0))
             .into()
     }
 
@@ -1587,7 +1590,7 @@ fn page_tab_button(
     let content = column![
         container(tab_icon(icon, icon_color))
             .width(Length::Fill)
-            .height(Length::Fixed(19.0))
+            .height(Length::Fixed(17.0))
             .align_x(alignment::Horizontal::Center)
             .align_y(alignment::Vertical::Center),
         text(label)
@@ -1606,13 +1609,13 @@ fn page_tab_button(
     container(
         button(content)
             .width(Length::Fill)
-            .height(Length::Fixed(46.0))
+            .height(Length::Fixed(42.0))
             .padding([5, 4])
             .style(move |_theme, status| page_tab_style(active, status))
             .on_press(message),
     )
     .width(Length::FillPortion(1))
-    .height(Length::Fixed(46.0))
+    .height(Length::Fixed(42.0))
     .into()
 }
 
@@ -2576,7 +2579,7 @@ fn page_tab_style(active: bool, status: button::Status) -> button::Style {
         text_color,
         border: Border {
             width: 0.0,
-            radius: 11.0.into(),
+            radius: 0.0.into(),
             color: Color::TRANSPARENT,
         },
         shadow: Shadow::default(),
