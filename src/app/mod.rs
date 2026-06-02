@@ -7,6 +7,7 @@ use std::process::Command;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::time::{Duration, SystemTime};
 
+use iced::font;
 use iced::widget::svg;
 use iced::widget::{
     button, column, container, horizontal_space, mouse_area, progress_bar, row, scrollable, text,
@@ -53,6 +54,7 @@ impl App {
     }
 
     pub fn theme(&self, _window: window::Id) -> Theme {
+        set_current_appearance(self.config.appearance);
         match self.config.appearance {
             AppAppearance::Light => Theme::Light,
             AppAppearance::Dark => Theme::Dark,
@@ -995,7 +997,7 @@ impl App {
 
         container(
             column![
-                provider_page_header(provider_ui_label(kind)),
+                provider_page_header(provider_ui_label(kind), self.provider_plan_label(kind)),
                 provider_panel(self.provider_card_model(kind), false, false)
             ]
             .spacing(8),
@@ -1397,6 +1399,11 @@ impl App {
             .find(|snapshot| snapshot.kind == kind)
     }
 
+    fn provider_plan_label(&self, kind: ProviderKind) -> Option<String> {
+        self.snapshot(kind)
+            .and_then(|snapshot| plan_label_from_notes(&snapshot.notes))
+    }
+
     fn provider_enabled(&self, kind: ProviderKind) -> bool {
         !self.config.disabled_providers.contains(&kind)
     }
@@ -1541,6 +1548,13 @@ fn handle_panel_focus_event(
     }
 }
 
+fn weighted_font(weight: font::Weight) -> Font {
+    Font {
+        weight,
+        ..Font::DEFAULT
+    }
+}
+
 #[cfg(target_os = "windows")]
 fn spawn_open_target(target: &str) -> std::io::Result<std::process::Child> {
     Command::new("explorer").arg(target).spawn()
@@ -1563,35 +1577,55 @@ fn page_tab_button(
     message: Message,
     _accent: Color,
 ) -> Element<'static, Message> {
-    let icon_color = if active { color_text() } else { color_muted() };
+    let active_content = Color::WHITE;
+    let icon_color = if active {
+        active_content
+    } else {
+        color_muted()
+    };
 
     let content = column![
         container(tab_icon(icon, icon_color))
             .width(Length::Fill)
-            .align_x(alignment::Horizontal::Center),
+            .height(Length::Fixed(19.0))
+            .align_x(alignment::Horizontal::Center)
+            .align_y(alignment::Vertical::Center),
         text(label)
             .size(12)
-            .color(if active { color_text() } else { color_muted() }),
+            .font(weighted_font(font::Weight::Medium))
+            .color(if active {
+                active_content
+            } else {
+                color_muted()
+            }),
     ]
-    .spacing(4)
+    .spacing(2)
     .align_x(alignment::Horizontal::Center)
     .width(Length::Fill);
 
     container(
         button(content)
             .width(Length::Fill)
-            .padding([7, 4])
+            .height(Length::Fixed(46.0))
+            .padding([5, 4])
             .style(move |_theme, status| page_tab_style(active, status))
             .on_press(message),
     )
     .width(Length::FillPortion(1))
+    .height(Length::Fixed(46.0))
     .into()
 }
 
 fn tab_icon(icon: TabIcon, color: Color) -> Element<'static, Message> {
+    let size = match icon {
+        TabIcon::Codex => 17.0,
+        TabIcon::OpenCode => 14.0,
+        _ => 16.0,
+    };
+
     svg::Svg::new(tab_icon_handle(icon))
-        .width(Length::Fixed(14.0))
-        .height(Length::Fixed(14.0))
+        .width(Length::Fixed(size))
+        .height(Length::Fixed(size))
         .style(move |_theme, _status| svg::Style { color: Some(color) })
         .into()
 }
@@ -1600,7 +1634,7 @@ fn tab_icon_handle(icon: TabIcon) -> svg::Handle {
     match icon {
         TabIcon::Home => svg::Handle::from_memory(include_bytes!("../../assets/gauge.svg")),
         TabIcon::Codex => {
-            svg::Handle::from_memory(include_bytes!("../../assets/OpenAI-white-monoblossom.svg"))
+            svg::Handle::from_memory(include_bytes!("../../assets/provider-icon-codex.svg"))
         }
         TabIcon::Copilot => {
             svg::Handle::from_memory(include_bytes!("../../assets/githubcopilot.svg"))
@@ -1623,7 +1657,10 @@ fn provider_list_row(model: ProviderCardModel) -> Element<'static, Message> {
 
     if !sections.is_empty() {
         let mut body = column![row![
-            text(title).size(15).color(color_text()),
+            text(title)
+                .size(15)
+                .font(weighted_font(font::Weight::Semibold))
+                .color(color_text()),
             horizontal_space(),
             subtitle
                 .map(|value| text(value).size(11).color(color_muted()))
@@ -1645,7 +1682,10 @@ fn provider_list_row(model: ProviderCardModel) -> Element<'static, Message> {
 
     container(
         column![
-            text(title).size(15).color(color_text()),
+            text(title)
+                .size(15)
+                .font(weighted_font(font::Weight::Semibold))
+                .color(color_text()),
             text(detail_text).size(11).color(color_muted()),
         ]
         .spacing(5),
@@ -1658,7 +1698,10 @@ fn provider_list_row(model: ProviderCardModel) -> Element<'static, Message> {
 fn provider_list_section(section: ProviderSection) -> Element<'static, Message> {
     column![
         row![
-            text(section.title).size(12).color(color_text()),
+            text(section.title)
+                .size(12)
+                .font(weighted_font(font::Weight::Semibold))
+                .color(color_text()),
             horizontal_space(),
             text(
                 section
@@ -1704,7 +1747,12 @@ fn provider_panel_body(
     let mut body = column!().spacing(12);
 
     if show_title {
-        body = body.push(text(model.title).size(18).color(color_text()));
+        body = body.push(
+            text(model.title)
+                .size(18)
+                .font(weighted_font(font::Weight::Bold))
+                .color(color_text()),
+        );
     }
 
     if let Some(subtitle) = model.subtitle {
@@ -1727,27 +1775,25 @@ fn provider_panel_body(
 }
 
 fn provider_section(section: ProviderSection) -> Element<'static, Message> {
-    let title_row =
-        row![text(section.title).size(14).color(color_text())].align_y(Alignment::Center);
+    let mut title_row = row![text(section.title)
+        .size(14)
+        .font(weighted_font(font::Weight::Semibold))
+        .color(color_text())]
+    .align_y(Alignment::Center)
+    .width(Length::Fill);
 
-    let footer: Element<'static, Message> = if let Some(trailing) = section.trailing {
-        row![
-            text(section.leading).size(12).color(color_text()),
-            horizontal_space(),
-            text(trailing).size(12).color(color_muted()),
-        ]
-        .align_y(Alignment::Center)
-        .into()
-    } else {
-        text(section.leading).size(12).color(color_text()).into()
-    };
+    if let Some(trailing) = section.trailing {
+        title_row = title_row
+            .push(horizontal_space())
+            .push(text(trailing).size(12).color(color_muted()));
+    }
 
     column![
         title_row,
         progress_bar(0.0..=100.0, section.progress)
             .height(7)
             .style(move |_theme| progress_style(section.accent)),
-        footer,
+        text(section.leading).size(12).color(color_text()),
     ]
     .spacing(7)
     .into()
@@ -1756,7 +1802,10 @@ fn provider_section(section: ProviderSection) -> Element<'static, Message> {
 fn copilot_page_header(has_saved_token: bool) -> Element<'static, Message> {
     let mut header = row![
         column![
-            text("Copilot").size(18).color(color_text()),
+            text("Copilot")
+                .size(17)
+                .font(weighted_font(font::Weight::Bold))
+                .color(color_text()),
             text("Updated just now").size(12).color(color_muted()),
         ]
         .spacing(2),
@@ -1778,21 +1827,30 @@ fn copilot_page_header(has_saved_token: bool) -> Element<'static, Message> {
 }
 
 fn open_code_go_page_header() -> Element<'static, Message> {
-    provider_page_header("OpenCode Go")
+    provider_page_header("OpenCode Go", None)
 }
 
-fn provider_page_header(title: &'static str) -> Element<'static, Message> {
-    let header = row![
+fn provider_page_header(
+    title: &'static str,
+    trailing: Option<String>,
+) -> Element<'static, Message> {
+    let mut header = row![
         column![
-            text(title).size(18).color(color_text()),
+            text(title)
+                .size(17)
+                .font(weighted_font(font::Weight::Bold))
+                .color(color_text()),
             text("Updated just now").size(12).color(color_muted()),
         ]
         .spacing(2),
         horizontal_space(),
-        text("Max").size(13).color(color_muted()),
     ]
     .align_y(Alignment::Center)
     .width(Length::Fill);
+
+    if let Some(trailing) = trailing {
+        header = header.push(text(trailing).size(13).color(color_muted()));
+    }
 
     column![header, divider_line()].spacing(10).into()
 }
@@ -1802,7 +1860,11 @@ fn back_page_header(
     subtitle: Option<&'static str>,
     trailing: Option<&'static str>,
 ) -> Element<'static, Message> {
-    let mut title_column = column![text(title).size(18).color(color_text())].spacing(2);
+    let mut title_column = column![text(title)
+        .size(18)
+        .font(weighted_font(font::Weight::Bold))
+        .color(color_text())]
+    .spacing(2);
 
     if let Some(subtitle) = subtitle {
         title_column = title_column.push(text(subtitle).size(12).color(color_muted()));
@@ -2265,17 +2327,59 @@ fn section_label(kind: ProviderKind, label: &str) -> String {
 
 const DISPLAY_NOTE_PREFIX: &str = "Display note:";
 const TECHNICAL_DETAIL_PREFIX: &str = "Technical detail:";
+const PLAN_NOTE_PREFIX: &str = "Plan:";
 
 fn first_meaningful_note(snapshot: &ProviderSnapshot) -> Option<String> {
     snapshot.notes.iter().find_map(|note| {
         if let Some(display_note) = note.strip_prefix(DISPLAY_NOTE_PREFIX) {
             Some(display_note.trim_start().to_string())
-        } else if note.starts_with("Plan:") || note.starts_with(TECHNICAL_DETAIL_PREFIX) {
+        } else if note.starts_with(PLAN_NOTE_PREFIX) || note.starts_with(TECHNICAL_DETAIL_PREFIX) {
             None
         } else {
             Some(note.clone())
         }
     })
+}
+
+fn plan_label_from_notes(notes: &[String]) -> Option<String> {
+    notes
+        .iter()
+        .find_map(|note| note.strip_prefix(PLAN_NOTE_PREFIX))
+        .map(str::trim)
+        .filter(|plan| !plan.is_empty())
+        .map(format_plan_label)
+}
+
+fn format_plan_label(plan: &str) -> String {
+    let normalized = plan
+        .trim()
+        .trim_start_matches("chatgpt_")
+        .trim_start_matches("chatgpt-")
+        .trim_start_matches("chatgpt ")
+        .to_ascii_lowercase();
+
+    match normalized.as_str() {
+        "plus" => "Plus".to_string(),
+        "pro" => "Pro".to_string(),
+        "max" => "Max".to_string(),
+        "team" => "Team".to_string(),
+        "enterprise" => "Enterprise".to_string(),
+        "free" => "Free".to_string(),
+        _ => plan
+            .split(['_', '-', ' '])
+            .filter(|word| !word.is_empty())
+            .map(|word| {
+                let mut chars = word.chars();
+                match chars.next() {
+                    Some(first) => {
+                        first.to_uppercase().collect::<String>() + &chars.as_str().to_lowercase()
+                    }
+                    None => String::new(),
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(" "),
+    }
 }
 
 fn snapshot_subtitle(snapshot: &ProviderSnapshot) -> Option<String> {
@@ -2403,9 +2507,9 @@ fn panel_shell_style(_theme: &Theme) -> iced::widget::container::Style {
     iced::widget::container::Style {
         background: Some(surface_shell().into()),
         border: Border {
-            width: 1.0,
+            width: 2.0,
             radius: 0.0.into(),
-            color: Color::from_rgba8(255, 255, 255, 0.24),
+            color: panel_window_border(),
         },
         shadow: Shadow {
             color: Color::from_rgba8(20, 16, 42, 0.24),
@@ -2835,6 +2939,14 @@ fn color_border() -> Color {
         Color::from_rgba8(220, 210, 255, 0.10)
     } else {
         Color::from_rgba8(118, 107, 145, 0.22)
+    }
+}
+
+fn panel_window_border() -> Color {
+    if dark_mode_active() {
+        Color::from_rgba8(166, 158, 190, 0.42)
+    } else {
+        Color::from_rgba8(53, 45, 83, 0.72)
     }
 }
 
