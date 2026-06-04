@@ -97,6 +97,8 @@ pub async fn fetch_snapshot() -> Result<ProviderSnapshot, String> {
         unavailable: false,
         summary_bar,
         detail_bars,
+        credits: None,
+        web_credits: None,
         notes: resolved_cookie.source.notes(),
     })
 }
@@ -515,6 +517,8 @@ fn disconnected_snapshot(message: &str) -> ProviderSnapshot {
         unavailable: true,
         summary_bar: None,
         detail_bars: Vec::new(),
+        credits: None,
+        web_credits: None,
         notes: vec![message.to_string()],
     }
 }
@@ -681,7 +685,7 @@ fn chromium_profile_sources(
 
             BrowserProfileSource {
                 browser,
-                profile_path: profile_dir.to_string_lossy().to_string(),
+                profile_path: profile_name.clone(),
                 source_label: format!("{} ({profile_name})", browser.label()),
             }
         })

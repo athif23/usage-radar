@@ -25,6 +25,8 @@ pub struct AppConfig {
     pub sort_home_by_urgency: bool,
     #[serde(default)]
     pub disabled_providers: Vec<ProviderKind>,
+    #[serde(default)]
+    pub codex_chatgpt_cookie_header: Option<String>,
     pub opencode_go_cookie_header: Option<String>,
     pub opencode_go_workspace_id: Option<String>,
 }
@@ -39,6 +41,7 @@ impl Default for AppConfig {
             appearance: AppAppearance::Light,
             sort_home_by_urgency: false,
             disabled_providers: Vec::new(),
+            codex_chatgpt_cookie_header: None,
             opencode_go_cookie_header: None,
             opencode_go_workspace_id: None,
         }

@@ -6,7 +6,7 @@ mod snapshot;
 pub mod urgency;
 
 pub use kinds::ProviderKind;
-pub use snapshot::{Confidence, LimitBar, ProviderSnapshot};
+pub use snapshot::{Confidence, CreditBalance, LimitBar, ProviderSnapshot};
 
 #[derive(Debug, Clone)]
 pub struct RefreshOutcome {

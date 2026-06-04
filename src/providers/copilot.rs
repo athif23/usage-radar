@@ -125,6 +125,8 @@ pub async fn fetch_snapshot() -> Result<ProviderSnapshot, String> {
         unavailable: false,
         summary_bar,
         detail_bars,
+        credits: None,
+        web_credits: None,
         notes,
     })
 }
@@ -284,6 +286,8 @@ fn disconnected_snapshot(message: &str) -> ProviderSnapshot {
         unavailable: true,
         summary_bar: None,
         detail_bars: Vec::new(),
+        credits: None,
+        web_credits: None,
         notes: vec![message.to_string()],
     }
 }

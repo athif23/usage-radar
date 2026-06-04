@@ -22,6 +22,15 @@ pub struct LimitBar {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreditBalance {
+    pub remaining: Option<f64>,
+    pub unlimited: bool,
+    pub scope: Option<String>,
+    #[serde(default)]
+    pub captured_at: Option<SystemTime>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderSnapshot {
     pub kind: ProviderKind,
     pub visible: bool,
@@ -31,5 +40,9 @@ pub struct ProviderSnapshot {
     pub unavailable: bool,
     pub summary_bar: Option<LimitBar>,
     pub detail_bars: Vec<LimitBar>,
+    #[serde(default)]
+    pub credits: Option<CreditBalance>,
+    #[serde(default)]
+    pub web_credits: Option<CreditBalance>,
     pub notes: Vec<String>,
 }

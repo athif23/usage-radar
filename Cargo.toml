@@ -21,7 +21,9 @@ lucide-icons = { version = "1.8", features = ["iced"] }
 [target.'cfg(target_os = "windows")'.dependencies]
 cookie-scoop = "0.1"
 keyring = { version = "3.6", default-features = false, features = ["windows-native"] }
+tao = "0.34"
 windows-sys = { version = "0.60", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+wry = "0.55"
 
 [target.'cfg(target_os = "windows")'.build-dependencies]
 winresource = "0.1"

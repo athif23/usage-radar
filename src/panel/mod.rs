@@ -21,6 +21,7 @@ pub struct State {
     pub selected_provider: Option<ProviderKind>,
     pub show_about: bool,
     pub show_settings: bool,
+    pub show_codex_cookie_setup: bool,
     pub show_open_code_go_setup: bool,
     pub last_scrolled_at: Option<Instant>,
 }
@@ -37,6 +38,7 @@ impl Default for State {
             selected_provider: None,
             show_about: false,
             show_settings: false,
+            show_codex_cookie_setup: false,
             show_open_code_go_setup: false,
             last_scrolled_at: None,
         }

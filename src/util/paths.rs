@@ -26,3 +26,11 @@ pub fn config_file_path() -> Result<PathBuf, String> {
 pub fn cache_file_path() -> Result<PathBuf, String> {
     Ok(cache_dir()?.join("snapshots.json"))
 }
+
+pub fn chatgpt_billing_file_path() -> Result<PathBuf, String> {
+    Ok(cache_dir()?.join("chatgpt_billing.json"))
+}
+
+pub fn chatgpt_billing_webview_dir() -> Result<PathBuf, String> {
+    Ok(cache_dir()?.join("ChatGPTWebView"))
+}

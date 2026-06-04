@@ -203,6 +203,8 @@ mod tests {
             unavailable,
             summary_bar: Some(bar.clone()),
             detail_bars: vec![bar],
+            credits: None,
+            web_credits: None,
             notes: Vec::new(),
         }
     }

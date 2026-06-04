@@ -21,7 +21,7 @@ use lucide_icons::Icon as LucideIcon;
 use tray_icon::menu::MenuEvent;
 use tray_icon::{MouseButton, MouseButtonState, TrayIconEvent};
 
-use crate::providers::{self, Confidence, ProviderKind, ProviderSnapshot};
+use crate::providers::{self, Confidence, CreditBalance, ProviderKind, ProviderSnapshot};
 use crate::storage::config::AppAppearance;
 use crate::storage::{cache as cache_store, config as config_store};
 use crate::util::{paths, startup as startup_util};
@@ -116,6 +116,19 @@ impl App {
             Message::ToggleLaunchAtStartup => self.toggle_launch_at_startup(),
             Message::ToggleHomeUrgencySort => self.toggle_home_urgency_sort(),
             Message::ToggleProvider(kind) => self.toggle_provider(kind),
+            Message::ShowCodexCookieSetup => {
+                self.panel.show_codex_cookie_setup = true;
+                Task::none()
+            }
+            Message::HideCodexCookieSetup => {
+                self.panel.show_codex_cookie_setup = false;
+                Task::none()
+            }
+            Message::ClearCodexSettings => self.clear_codex_settings(),
+            Message::OpenChatGptBillingProbe => self.open_chatgpt_billing_probe(),
+            Message::ChatGptBillingProbeFinished(result) => {
+                self.handle_chatgpt_billing_probe_finished(result)
+            }
             Message::OpenOpenCodeGo => self.open_open_code_go(),
             Message::ShowOpenCodeGoSetup => {
                 self.panel.show_open_code_go_setup = true;
@@ -384,6 +397,9 @@ impl App {
         if selected_provider != Some(ProviderKind::OpenCodeGo) {
             self.panel.show_open_code_go_setup = false;
         }
+        if selected_provider != Some(ProviderKind::Codex) {
+            self.panel.show_codex_cookie_setup = false;
+        }
 
         self.panel.selected_provider = selected_provider;
         self.config.selected_provider = selected_provider;
@@ -480,6 +496,75 @@ impl App {
 
     fn open_open_code_go(&mut self) -> Task<Message> {
         self.open_external_target("https://opencode.ai", "OpenCode Go")
+    }
+
+    fn open_chatgpt_billing_probe(&mut self) -> Task<Message> {
+        match chatgpt_billing_probe_path() {
+            Ok(path) => match Command::new(&path).spawn() {
+                Ok(mut child) => {
+                    self.panel.show_codex_cookie_setup = false;
+                    self.runtime_notice =
+                        Some("Update ChatGPT billing balance in the new window.".to_string());
+                    Task::perform(
+                        async move {
+                            let status = child.wait().map_err(|error| {
+                                format!("ChatGPT billing balance helper failed: {error}")
+                            })?;
+
+                            if status.success() {
+                                Ok(())
+                            } else {
+                                Err(format!(
+                                    "ChatGPT billing balance helper exited with {status}"
+                                ))
+                            }
+                        },
+                        Message::ChatGptBillingProbeFinished,
+                    )
+                }
+                Err(error) => {
+                    self.runtime_notice = Some(format!(
+                        "Failed to open ChatGPT billing balance helper {}: {error}",
+                        path.display()
+                    ));
+                    Task::none()
+                }
+            },
+            Err(error) => {
+                self.runtime_notice = Some(error);
+                Task::none()
+            }
+        }
+    }
+
+    fn handle_chatgpt_billing_probe_finished(
+        &mut self,
+        result: Result<(), String>,
+    ) -> Task<Message> {
+        match result {
+            Ok(()) => {
+                self.runtime_notice =
+                    Some("ChatGPT billing balance updated; refreshing Codex.".to_string());
+                self.request_refresh(RefreshReason::Manual)
+            }
+            Err(error) => {
+                self.runtime_notice = Some(error);
+                Task::none()
+            }
+        }
+    }
+
+    fn clear_codex_settings(&mut self) -> Task<Message> {
+        self.config.codex_chatgpt_cookie_header = None;
+        self.panel.show_codex_cookie_setup = false;
+        if let Ok(path) = paths::chatgpt_billing_file_path() {
+            let _ = fs::remove_file(path);
+        }
+        if let Ok(path) = paths::chatgpt_billing_webview_dir() {
+            let _ = fs::remove_dir_all(path);
+        }
+        self.persist_config();
+        self.request_refresh(RefreshReason::Manual)
     }
 
     fn save_open_code_go_settings(&mut self) -> Task<Message> {
@@ -716,7 +801,17 @@ impl App {
 
         if had_success {
             self.persist_cache();
-            if self.runtime_notice == self.tray.init_error {
+            if self.runtime_notice == self.tray.init_error
+                || self.codex_billing_credits_available()
+                    && self
+                        .runtime_notice
+                        .as_deref()
+                        .map(|notice| {
+                            notice.contains("ChatGPT billing sign-in")
+                                || notice.contains("ChatGPT billing balance")
+                        })
+                        .unwrap_or(false)
+            {
                 self.runtime_notice = None;
             }
         }
@@ -990,6 +1085,10 @@ impl App {
     }
 
     fn provider_page_view(&self, kind: ProviderKind) -> Element<'_, Message> {
+        if kind == ProviderKind::Codex {
+            return self.codex_page_view();
+        }
+
         if kind == ProviderKind::Copilot {
             return self.copilot_page_view();
         }
@@ -1008,6 +1107,39 @@ impl App {
         .width(Length::Fill)
         .padding(Padding::ZERO.top(6.0).left(10.0).right(10.0))
         .into()
+    }
+
+    fn codex_page_view(&self) -> Element<'_, Message> {
+        let snapshot = self.snapshot(ProviderKind::Codex);
+        let needs_web_connect = snapshot
+            .and_then(|snapshot| snapshot.web_credits.as_ref())
+            .map(|credits| credits.remaining.is_none() && !credits.unlimited)
+            .unwrap_or(true);
+        let setup_visible = self.panel.show_codex_cookie_setup || needs_web_connect;
+        let can_collapse_setup = !needs_web_connect;
+
+        let mut body = column![
+            provider_page_header(
+                provider_ui_label(ProviderKind::Codex),
+                self.provider_plan_label(ProviderKind::Codex),
+            ),
+            provider_panel(self.provider_card_model(ProviderKind::Codex), false, false)
+        ]
+        .spacing(8);
+
+        if setup_visible {
+            body = body.push(chatgpt_billing_setup_card(can_collapse_setup));
+        } else {
+            body = body.push(text_inline_button(
+                "Update OpenAI web balance",
+                Message::ShowCodexCookieSetup,
+            ));
+        }
+
+        container(body)
+            .width(Length::Fill)
+            .padding(Padding::ZERO.top(6.0).left(10.0).right(10.0))
+            .into()
     }
 
     fn copilot_page_view(&self) -> Element<'_, Message> {
@@ -1279,6 +1411,7 @@ impl App {
                     accent,
                     subtitle: None,
                     sections: Vec::new(),
+                    metrics: Vec::new(),
                     headline: Some(if self.refresh.in_flight {
                         "Checking usage now".to_string()
                     } else {
@@ -1294,6 +1427,7 @@ impl App {
                     accent,
                     subtitle: None,
                     sections: Vec::new(),
+                    metrics: Vec::new(),
                     headline: Some(if self.copilot_auth.is_busy() || self.copilot_auth.awaiting_snapshot {
                         "Checking Copilot status".to_string()
                     } else if self.refresh.in_flight || self.copilot_auth.has_saved_token {
@@ -1317,6 +1451,7 @@ impl App {
                     accent,
                     subtitle: None,
                     sections: Vec::new(),
+                    metrics: Vec::new(),
                     headline: Some(if self.refresh.in_flight {
                         "Looking for an OpenCode Go session".to_string()
                     } else {
@@ -1335,6 +1470,7 @@ impl App {
                     accent,
                     subtitle: None,
                     sections: Vec::new(),
+                    metrics: Vec::new(),
                     headline: Some("Support not wired yet".to_string()),
                     detail: Some(
                         "This page stays visible, but Usage Radar will not invent data until a trustworthy source exists."
@@ -1356,6 +1492,7 @@ impl App {
                 accent,
                 subtitle: snapshot_subtitle(snapshot),
                 sections: Vec::new(),
+                metrics: Vec::new(),
                 headline: Some(headline),
                 detail: Some(first_meaningful_note(snapshot).unwrap_or_else(|| {
                     if kind == ProviderKind::OpenCodeGo {
@@ -1370,13 +1507,15 @@ impl App {
         }
 
         let sections = provider_sections(kind, snapshot);
+        let metrics = provider_metrics(kind, snapshot);
 
-        if sections.is_empty() {
+        if sections.is_empty() && metrics.is_empty() {
             return ProviderCardModel {
                 title,
                 accent,
                 subtitle: snapshot_subtitle(snapshot),
                 sections,
+                metrics,
                 headline: Some("Snapshot available".to_string()),
                 detail: Some(first_meaningful_note(snapshot).unwrap_or_else(|| {
                     "The provider responded, but no displayable sections were returned yet."
@@ -1390,6 +1529,7 @@ impl App {
             accent,
             subtitle: snapshot_subtitle(snapshot),
             sections,
+            metrics,
             headline: None,
             detail: None,
         }
@@ -1400,6 +1540,13 @@ impl App {
             .providers
             .iter()
             .find(|snapshot| snapshot.kind == kind)
+    }
+
+    fn codex_billing_credits_available(&self) -> bool {
+        self.snapshot(ProviderKind::Codex)
+            .and_then(|snapshot| snapshot.web_credits.as_ref())
+            .and_then(|credits| credits.remaining)
+            .is_some()
     }
 
     fn provider_plan_label(&self, kind: ProviderKind) -> Option<String> {
@@ -1500,6 +1647,7 @@ struct ProviderCardModel {
     accent: Color,
     subtitle: Option<String>,
     sections: Vec<ProviderSection>,
+    metrics: Vec<ProviderMetric>,
     headline: Option<String>,
     detail: Option<String>,
 }
@@ -1510,6 +1658,14 @@ struct ProviderSection {
     progress: f32,
     leading: String,
     trailing: Option<String>,
+    accent: Color,
+}
+
+#[derive(Debug, Clone)]
+struct ProviderMetric {
+    value: String,
+    unit: Option<String>,
+    detail: Option<String>,
     accent: Color,
 }
 
@@ -1571,6 +1727,29 @@ fn spawn_open_target(target: &str) -> std::io::Result<std::process::Child> {
 #[cfg(all(unix, not(target_os = "macos")))]
 fn spawn_open_target(target: &str) -> std::io::Result<std::process::Child> {
     Command::new("xdg-open").arg(target).spawn()
+}
+
+fn chatgpt_billing_probe_path() -> Result<std::path::PathBuf, String> {
+    let current = std::env::current_exe()
+        .map_err(|error| format!("Could not locate Usage Radar executable: {error}"))?;
+    let directory = current
+        .parent()
+        .ok_or_else(|| format!("Executable has no parent directory: {}", current.display()))?;
+    let executable = if cfg!(target_os = "windows") {
+        "chatgpt_billing_probe.exe"
+    } else {
+        "chatgpt_billing_probe"
+    };
+    let path = directory.join(executable);
+
+    if path.exists() {
+        Ok(path)
+    } else {
+        Err(format!(
+            "ChatGPT billing balance helper was not found at {}. Build with `cargo build --bins`.",
+            path.display()
+        ))
+    }
 }
 
 fn page_tab_button(
@@ -1654,11 +1833,12 @@ fn provider_list_row(model: ProviderCardModel) -> Element<'static, Message> {
         accent: _,
         subtitle,
         sections,
+        metrics,
         headline,
         detail,
     } = model;
 
-    if !sections.is_empty() {
+    if !sections.is_empty() || !metrics.is_empty() {
         let mut body = column![row![
             text(title)
                 .size(15)
@@ -1674,6 +1854,10 @@ fn provider_list_row(model: ProviderCardModel) -> Element<'static, Message> {
 
         for section in sections {
             body = body.push(provider_list_section(section));
+        }
+
+        for metric in metrics {
+            body = body.push(provider_list_metric(metric));
         }
 
         return container(body).width(Length::Fill).padding([10, 4]).into();
@@ -1774,6 +1958,10 @@ fn provider_panel_body(
         body = body.push(provider_section(section));
     }
 
+    for metric in model.metrics {
+        body = body.push(provider_metric(metric));
+    }
+
     body
 }
 
@@ -1800,6 +1988,55 @@ fn provider_section(section: ProviderSection) -> Element<'static, Message> {
     ]
     .spacing(7)
     .into()
+}
+
+fn provider_list_metric(metric: ProviderMetric) -> Element<'static, Message> {
+    let value = credit_metric_value(metric.value, metric.unit, metric.accent, false);
+
+    let mut value_row = row![value].align_y(Alignment::Center);
+
+    if let Some(detail) = metric.detail {
+        column![value_row, text(detail).size(11).color(color_muted())]
+            .spacing(4)
+            .into()
+    } else {
+        value_row = value_row.width(Length::Fill);
+        column![value_row].into()
+    }
+}
+
+fn provider_metric(metric: ProviderMetric) -> Element<'static, Message> {
+    let value = credit_metric_value(metric.value, metric.unit, metric.accent, true);
+
+    let mut body = column![row![value].align_y(Alignment::Center)].spacing(5);
+
+    if let Some(detail) = metric.detail {
+        body = body.push(text(detail).size(11).color(color_muted()));
+    }
+
+    body.into()
+}
+
+fn credit_metric_value(
+    value: String,
+    unit: Option<String>,
+    accent: Color,
+    prominent: bool,
+) -> Element<'static, Message> {
+    let value_size = if prominent { 18 } else { 15 };
+    let unit_size = if prominent { 13 } else { 12 };
+    let mut content = row![text(value)
+        .size(value_size)
+        .font(weighted_font(font::Weight::Semibold))
+        .color(accent)]
+    .spacing(5)
+    .align_y(Alignment::End);
+
+    if let Some(unit) = unit {
+        content = content.push(text(unit).size(unit_size).color(color_muted()));
+    }
+
+    content.into()
 }
 
 fn copilot_page_header(has_saved_token: bool) -> Element<'static, Message> {
@@ -1991,6 +2228,46 @@ fn action_status_card(title: &'static str, detail: &str) -> Element<'static, Mes
             text(detail.to_string()).size(11).color(color_muted()),
         ]
         .spacing(5),
+    )
+    .width(Length::Fill)
+    .padding(10)
+    .style(|_theme| settings_group_style())
+    .into()
+}
+
+fn chatgpt_billing_setup_card(can_collapse: bool) -> Element<'static, Message> {
+    let action_label = if can_collapse {
+        "Update OpenAI web balance"
+    } else {
+        "Connect OpenAI web"
+    };
+
+    let mut secondary_actions = row![text_inline_button(
+        "Clear web session",
+        Message::ClearCodexSettings
+    )]
+    .spacing(10)
+    .align_y(Alignment::Center);
+
+    if can_collapse {
+        secondary_actions =
+            secondary_actions.push(text_inline_button("Done", Message::HideCodexCookieSetup));
+    }
+
+    container(
+        column![
+            text("OpenAI web billing").size(13).color(color_text()),
+            text("Connect ChatGPT billing once, then Usage Radar can refresh the web credit balance in the background.")
+                .size(11)
+                .color(color_muted()),
+            primary_action_button(
+                action_label,
+                provider_accent(ProviderKind::Codex),
+                Message::OpenChatGptBillingProbe,
+            ),
+            secondary_actions,
+        ]
+        .spacing(7),
     )
     .width(Length::Fill)
     .padding(10)
@@ -2282,6 +2559,72 @@ fn provider_sections(kind: ProviderKind, snapshot: &ProviderSnapshot) -> Vec<Pro
     }
 }
 
+fn provider_metrics(kind: ProviderKind, snapshot: &ProviderSnapshot) -> Vec<ProviderMetric> {
+    let mut metrics = Vec::new();
+
+    if let Some(credits) = snapshot.credits.as_ref() {
+        if let Some(metric) = provider_credit_metric(kind, snapshot, credits) {
+            metrics.push(metric);
+        }
+    }
+
+    if kind == ProviderKind::Codex {
+        if let Some(credits) = snapshot.web_credits.as_ref() {
+            if let Some(metric) = provider_credit_metric(kind, snapshot, credits) {
+                metrics.push(metric);
+            }
+        }
+    }
+
+    metrics
+}
+
+fn provider_credit_metric(
+    kind: ProviderKind,
+    snapshot: &ProviderSnapshot,
+    credits: &CreditBalance,
+) -> Option<ProviderMetric> {
+    let (value, unit) = if credits.unlimited {
+        match credits.remaining {
+            Some(remaining) => (
+                format_credit_amount(remaining),
+                Some("+ unlimited".to_string()),
+            ),
+            None => ("Unlimited".to_string(), None),
+        }
+    } else if let Some(remaining) = credits.remaining {
+        (format_credit_amount(remaining), Some("credits".to_string()))
+    } else {
+        return None;
+    };
+
+    let detail = credits.scope.as_ref().map(|scope| {
+        let clean_scope = scope
+            .trim_start_matches("ChatGPT ")
+            .trim_start_matches("Codex ")
+            .to_string();
+        let freshness = credit_freshness_label(credits);
+        let detail = if let Some(freshness) = freshness {
+            format!("{clean_scope} · {freshness}")
+        } else {
+            clean_scope
+        };
+
+        if snapshot.stale {
+            format!("Last known {detail}")
+        } else {
+            detail
+        }
+    });
+
+    Some(ProviderMetric {
+        value,
+        unit,
+        detail,
+        accent: provider_accent(kind),
+    })
+}
+
 fn provider_ui_label(kind: ProviderKind) -> &'static str {
     match kind {
         ProviderKind::Codex => "Codex",
@@ -2413,6 +2756,8 @@ fn provider_failure_snapshot(kind: ProviderKind, error: &str) -> ProviderSnapsho
         unavailable: true,
         summary_bar: None,
         detail_bars: Vec::new(),
+        credits: None,
+        web_credits: None,
         notes: vec![
             display_note(refresh_failure_message(kind, true)),
             technical_detail_note(error),
@@ -2473,6 +2818,62 @@ fn format_percent_left(percent_left: f32) -> String {
     } else {
         format!("{rounded:.1}% left")
     }
+}
+
+fn compact_age_since(time: SystemTime) -> Option<String> {
+    let age = SystemTime::now().duration_since(time).ok()?;
+    let seconds = age.as_secs();
+
+    if seconds < 60 {
+        Some("now".to_string())
+    } else if seconds < 60 * 60 {
+        Some(format!("{}m", seconds / 60))
+    } else if seconds < 48 * 60 * 60 {
+        Some(format!("{}h", seconds / 60 / 60))
+    } else {
+        Some(format!("{}d", seconds / 60 / 60 / 24))
+    }
+}
+
+fn credit_freshness_label(credits: &CreditBalance) -> Option<String> {
+    credits.captured_at.and_then(compact_age_since).map(|age| {
+        if age == "now" {
+            "updated now".to_string()
+        } else {
+            format!("updated {age} ago")
+        }
+    })
+}
+
+fn format_credit_amount(value: f64) -> String {
+    let rounded = (value * 10.0).round() / 10.0;
+
+    let raw = if (rounded - rounded.round()).abs() < 0.05 {
+        format!("{rounded:.0}")
+    } else {
+        format!("{rounded:.1}")
+    };
+
+    add_number_grouping(&raw)
+}
+
+fn add_number_grouping(raw: &str) -> String {
+    let (whole, fraction) = raw.split_once('.').unwrap_or((raw, ""));
+    let mut grouped = String::new();
+
+    for (index, character) in whole.chars().rev().enumerate() {
+        if index > 0 && index % 3 == 0 {
+            grouped.push(',');
+        }
+        grouped.push(character);
+    }
+
+    let mut value = grouped.chars().rev().collect::<String>();
+    if !fraction.is_empty() {
+        value.push('.');
+        value.push_str(fraction);
+    }
+    value
 }
 
 #[derive(Clone, Copy)]

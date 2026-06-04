@@ -72,7 +72,7 @@ Usage Radar is an unofficial utility and is not affiliated with OpenAI or GitHub
 
 | Provider | Status | Source | Confidence |
 | --- | --- | --- | --- |
-| Codex | Working | `~/.codex/auth.json` or `CODEX_HOME/auth.json` + `https://chatgpt.com/backend-api/wham/usage` | Exact |
+| Codex | Working | `~/.codex/auth.json` or `CODEX_HOME/auth.json` + `https://chatgpt.com/backend-api/wham/usage` for usage windows and account/workspace credits | Exact |
 | GitHub Copilot | Working | GitHub device flow + `https://api.github.com/copilot_internal/user` | Partial |
 | OpenCode Go | Working | Windows browser session import from Chrome/Brave/Edge or manual cookie fallback + usage page parsing based on the CodexBar approach | Exact |
 | Claude Code | Planned | Not wired yet | — |
