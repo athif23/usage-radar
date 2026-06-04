@@ -2708,6 +2708,9 @@ fn format_plan_label(plan: &str) -> String {
         "plus" => "Plus".to_string(),
         "pro" => "Pro".to_string(),
         "max" => "Max".to_string(),
+        "business" | "self_serve_business" | "self_serve_business_usage_based" => {
+            "Business".to_string()
+        }
         "team" => "Team".to_string(),
         "enterprise" => "Enterprise".to_string(),
         "free" => "Free".to_string(),
