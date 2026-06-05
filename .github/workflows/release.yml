@@ -20,14 +20,17 @@ jobs:
           - os: windows-latest
             label: windows-x64
             binary: usage-radar.exe
+            helper_binary: chatgpt_billing_probe.exe
             archive: zip
           - os: macos-latest
             label: macos-arm64
             binary: usage-radar
+            helper_binary: chatgpt_billing_probe
             archive: tar.gz
           - os: ubuntu-latest
             label: linux-x64
             binary: usage-radar
+            helper_binary: chatgpt_billing_probe
             archive: tar.gz
 
     steps:
@@ -47,7 +50,7 @@ jobs:
           sudo apt-get install -y libgtk-3-dev libayatana-appindicator3-dev libxdo-dev
 
       - name: Build release binary
-        run: cargo build --release --locked
+        run: cargo build --release --locked --bins
 
       - name: Name artifact
         id: artifact
@@ -74,6 +77,7 @@ jobs:
 
           New-Item -ItemType Directory -Path $stage | Out-Null
           Copy-Item "target/release/${{ matrix.binary }}" $stage
+          Copy-Item "target/release/${{ matrix.helper_binary }}" $stage
           Copy-Item README.md $stage
           Copy-Item LICENSE $stage
 
