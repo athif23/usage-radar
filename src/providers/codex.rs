@@ -86,6 +86,10 @@ pub async fn fetch_snapshot() -> Result<ProviderSnapshot, String> {
         notes.push(format!("Plan: {plan_type}"));
     }
 
+    let available_resets = usage
+        .rate_limit_reset_credits
+        .and_then(|resets| u32::try_from(resets.available_count).ok());
+
     let credits = usage.credits.and_then(|credits| {
         if credits.has_credits || credits.unlimited || credits.balance.is_some() {
             Some(CreditBalance {
@@ -161,6 +165,7 @@ pub async fn fetch_snapshot() -> Result<ProviderSnapshot, String> {
         unavailable: false,
         summary_bar,
         detail_bars,
+        available_resets,
         credits,
         web_credits,
         notes,
@@ -208,7 +213,13 @@ struct CodexTokens {
 struct WhamUsage {
     plan_type: Option<String>,
     rate_limit: Option<RateLimit>,
+    rate_limit_reset_credits: Option<RateLimitResetCredits>,
     credits: Option<Credits>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RateLimitResetCredits {
+    available_count: i64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -772,6 +783,7 @@ mod tests {
         assert_eq!(credits.balance, Some(42.5));
         assert!(credits.has_credits);
         assert!(!credits.unlimited);
+        assert!(usage.rate_limit_reset_credits.is_none());
     }
 
     #[test]
@@ -789,6 +801,25 @@ mod tests {
 
         let credits = usage.credits.expect("credits should be present");
         assert_eq!(credits.balance, Some(112.4));
+    }
+
+    #[test]
+    fn decodes_available_rate_limit_resets() {
+        let usage: WhamUsage = serde_json::from_str(
+            r#"{
+                "rate_limit": null,
+                "rate_limit_reset_credits": {
+                    "available_count": 3
+                },
+                "credits": null
+            }"#,
+        )
+        .expect("reset credit payload should decode");
+
+        let resets = usage
+            .rate_limit_reset_credits
+            .expect("reset credits should be present");
+        assert_eq!(resets.available_count, 3);
     }
 
     #[test]

@@ -1991,7 +1991,7 @@ fn provider_section(section: ProviderSection) -> Element<'static, Message> {
 }
 
 fn provider_list_metric(metric: ProviderMetric) -> Element<'static, Message> {
-    let value = credit_metric_value(metric.value, metric.unit, metric.accent, false);
+    let value = provider_metric_value(metric.value, metric.unit, metric.accent, false);
 
     let mut value_row = row![value].align_y(Alignment::Center);
 
@@ -2006,7 +2006,7 @@ fn provider_list_metric(metric: ProviderMetric) -> Element<'static, Message> {
 }
 
 fn provider_metric(metric: ProviderMetric) -> Element<'static, Message> {
-    let value = credit_metric_value(metric.value, metric.unit, metric.accent, true);
+    let value = provider_metric_value(metric.value, metric.unit, metric.accent, true);
 
     let mut body = column![row![value].align_y(Alignment::Center)].spacing(5);
 
@@ -2017,7 +2017,7 @@ fn provider_metric(metric: ProviderMetric) -> Element<'static, Message> {
     body.into()
 }
 
-fn credit_metric_value(
+fn provider_metric_value(
     value: String,
     unit: Option<String>,
     accent: Color,
@@ -2562,6 +2562,28 @@ fn provider_sections(kind: ProviderKind, snapshot: &ProviderSnapshot) -> Vec<Pro
 fn provider_metrics(kind: ProviderKind, snapshot: &ProviderSnapshot) -> Vec<ProviderMetric> {
     let mut metrics = Vec::new();
 
+    if kind == ProviderKind::Codex {
+        if let Some(available_resets) = snapshot.available_resets {
+            metrics.push(ProviderMetric {
+                value: available_resets.to_string(),
+                unit: Some(
+                    if available_resets == 1 {
+                        "reset available"
+                    } else {
+                        "resets available"
+                    }
+                    .to_string(),
+                ),
+                detail: Some(if snapshot.stale {
+                    "Last known reset bank".to_string()
+                } else {
+                    "Usage limit reset bank".to_string()
+                }),
+                accent: provider_accent(kind),
+            });
+        }
+    }
+
     if let Some(credits) = snapshot.credits.as_ref() {
         if let Some(metric) = provider_credit_metric(kind, snapshot, credits) {
             metrics.push(metric);
@@ -2759,6 +2781,7 @@ fn provider_failure_snapshot(kind: ProviderKind, error: &str) -> ProviderSnapsho
         unavailable: true,
         summary_bar: None,
         detail_bars: Vec::new(),
+        available_resets: None,
         credits: None,
         web_credits: None,
         notes: vec![
