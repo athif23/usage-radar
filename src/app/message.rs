@@ -24,6 +24,7 @@ pub enum Message {
     ToggleProvider(ProviderKind),
     ShowCodexCookieSetup,
     HideCodexCookieSetup,
+    ToggleCodexResetDetails,
     ClearCodexSettings,
     OpenChatGptBillingProbe,
     ChatGptBillingProbeFinished(Result<(), String>),

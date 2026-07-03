@@ -73,7 +73,7 @@ Usage Radar is an unofficial utility and is not affiliated with OpenAI or GitHub
 
 | Provider | Status | Source | Confidence |
 | --- | --- | --- | --- |
-| Codex | Working | `~/.codex/auth.json` or `CODEX_HOME/auth.json` + `https://chatgpt.com/backend-api/wham/usage` for usage windows and reset availability, with optional OpenAI web billing capture for workspace credits | Exact |
+| Codex | Working | `~/.codex/auth.json` or `CODEX_HOME/auth.json` + `https://chatgpt.com/backend-api/wham/usage` for usage windows and `/backend-api/wham/rate-limit-reset-credits` for reset availability and expiry timestamps, with optional OpenAI web billing capture for workspace credits | Exact |
 | GitHub Copilot | Working | GitHub device flow + `https://api.github.com/copilot_internal/user` | Partial |
 | OpenCode Go | Working | Windows browser session import from Chrome/Brave/Edge or manual cookie fallback + usage page parsing based on the CodexBar approach | Exact |
 | Claude Code | Planned | Not wired yet | — |
@@ -217,7 +217,7 @@ Windows is the only platform tested properly right now. macOS and Linux artifact
 - provider support is only as stable as the upstream surfaces we depend on
 - Codex, Copilot, and OpenCode Go can change their auth or usage surfaces at any time
 - Codex 5h and weekly bars depend on the Codex OAuth usage response including `rate_limit`; OpenAI web billing credits are shown as an additional balance and do not replace usage windows
-- Codex exposes the number of available usage-limit resets, but not their grant or expiration timestamps
+- Codex reset availability and expiry dates depend on the dedicated reset-credit endpoint
 - Claude Code is planned, but not implemented yet
 - the settings UI is intentionally small and focused on daily-use controls, not account dashboards
 

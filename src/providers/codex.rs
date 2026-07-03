@@ -8,13 +8,16 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use cookie_scoop::{get_cookies, BrowserName, CookieMode, GetCookiesOptions};
 use regex::Regex;
 use serde::{Deserialize, Deserializer};
+use time::format_description::well_known::Rfc3339;
+use time::OffsetDateTime;
 
 use crate::providers::snapshot::{Confidence, CreditBalance, LimitBar};
-use crate::providers::{ProviderKind, ProviderSnapshot};
+use crate::providers::{ProviderKind, ProviderSnapshot, ResetBank};
 use crate::storage::config as config_store;
 use crate::util::paths;
 
 const USAGE_URL: &str = "https://chatgpt.com/backend-api/wham/usage";
+const RESET_CREDITS_URL: &str = "https://chatgpt.com/backend-api/wham/rate-limit-reset-credits";
 const CHATGPT_URL: &str = "https://chatgpt.com";
 const ADMIN_BILLING_URL: &str = "https://chatgpt.com/admin/billing";
 const BROWSER_USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36";
@@ -28,20 +31,8 @@ pub async fn fetch_snapshot() -> Result<ProviderSnapshot, String> {
         .access_token
         .ok_or_else(|| "Codex auth.json does not contain an access token".to_string())?;
 
-    let mut request = reqwest::Client::new()
-        .get(USAGE_URL)
-        .bearer_auth(token)
-        .header(reqwest::header::ACCEPT, "application/json")
-        .header(reqwest::header::USER_AGENT, "usage-radar");
-
-    if let Some(account_id) = account_id
-        .as_deref()
-        .filter(|value| !value.trim().is_empty())
-    {
-        request = request.header("ChatGPT-Account-Id", account_id);
-    }
-
-    let response = request
+    let client = reqwest::Client::new();
+    let response = codex_get(&client, USAGE_URL, &token, account_id.as_deref())
         .send()
         .await
         .map_err(|error| format!("Could not reach Codex usage endpoint: {error}"))?;
@@ -86,9 +77,13 @@ pub async fn fetch_snapshot() -> Result<ProviderSnapshot, String> {
         notes.push(format!("Plan: {plan_type}"));
     }
 
-    let available_resets = usage
-        .rate_limit_reset_credits
-        .and_then(|resets| u32::try_from(resets.available_count).ok());
+    let reset_bank = match fetch_reset_bank(&client, &token, account_id.as_deref()).await {
+        Ok(reset_bank) => Some(reset_bank),
+        Err(error) => {
+            notes.push(format!("Reset bank unavailable: {error}"));
+            None
+        }
+    };
 
     let credits = usage.credits.and_then(|credits| {
         if credits.has_credits || credits.unlimited || credits.balance.is_some() {
@@ -152,7 +147,8 @@ pub async fn fetch_snapshot() -> Result<ProviderSnapshot, String> {
         }
     }
 
-    if detail_bars.is_empty() && credits.is_none() && web_credits.is_none() {
+    if detail_bars.is_empty() && reset_bank.is_none() && credits.is_none() && web_credits.is_none()
+    {
         return Err("Codex usage response did not include limit windows or credits".to_string());
     }
 
@@ -165,11 +161,54 @@ pub async fn fetch_snapshot() -> Result<ProviderSnapshot, String> {
         unavailable: false,
         summary_bar,
         detail_bars,
-        available_resets,
+        reset_bank,
         credits,
         web_credits,
         notes,
     })
+}
+
+fn codex_get(
+    client: &reqwest::Client,
+    url: &str,
+    token: &str,
+    account_id: Option<&str>,
+) -> reqwest::RequestBuilder {
+    let request = client
+        .get(url)
+        .bearer_auth(token)
+        .header(reqwest::header::ACCEPT, "application/json")
+        .header(reqwest::header::USER_AGENT, "usage-radar");
+
+    match account_id.filter(|value| !value.trim().is_empty()) {
+        Some(account_id) => request.header("ChatGPT-Account-Id", account_id),
+        None => request,
+    }
+}
+
+async fn fetch_reset_bank(
+    client: &reqwest::Client,
+    token: &str,
+    account_id: Option<&str>,
+) -> Result<ResetBank, String> {
+    let response = codex_get(client, RESET_CREDITS_URL, token, account_id)
+        .send()
+        .await
+        .map_err(|error| format!("could not reach reset credits endpoint: {error}"))?;
+
+    if !response.status().is_success() {
+        return Err(format!(
+            "reset credits endpoint returned {}",
+            response.status()
+        ));
+    }
+
+    let response: ResetCreditsResponse = response
+        .json()
+        .await
+        .map_err(|error| format!("could not decode reset credits response: {error}"))?;
+
+    response.into_reset_bank()
 }
 
 fn load_auth() -> Result<CodexAuthFile, String> {
@@ -213,13 +252,47 @@ struct CodexTokens {
 struct WhamUsage {
     plan_type: Option<String>,
     rate_limit: Option<RateLimit>,
-    rate_limit_reset_credits: Option<RateLimitResetCredits>,
     credits: Option<Credits>,
 }
 
 #[derive(Debug, Deserialize)]
-struct RateLimitResetCredits {
+struct ResetCreditsResponse {
     available_count: i64,
+    #[serde(default)]
+    credits: Vec<ResetCredit>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ResetCredit {
+    status: String,
+    expires_at: Option<String>,
+}
+
+impl ResetCreditsResponse {
+    fn into_reset_bank(self) -> Result<ResetBank, String> {
+        let available_count = u32::try_from(self.available_count)
+            .map_err(|_| "reset credits endpoint returned an invalid count".to_string())?;
+        let mut expires_at = self
+            .credits
+            .into_iter()
+            .filter(|credit| credit.status.eq_ignore_ascii_case("available"))
+            .filter_map(|credit| credit.expires_at)
+            .filter_map(|expires_at| parse_reset_expiry(&expires_at))
+            .collect::<Vec<_>>();
+        expires_at.sort_unstable();
+
+        Ok(ResetBank {
+            available_count,
+            expires_at,
+        })
+    }
+}
+
+fn parse_reset_expiry(value: &str) -> Option<SystemTime> {
+    let expires_at = OffsetDateTime::parse(value, &Rfc3339).ok()?;
+    let seconds = u64::try_from(expires_at.unix_timestamp()).ok()?;
+
+    UNIX_EPOCH.checked_add(Duration::new(seconds, expires_at.nanosecond()))
 }
 
 #[derive(Debug, Deserialize)]
@@ -783,7 +856,6 @@ mod tests {
         assert_eq!(credits.balance, Some(42.5));
         assert!(credits.has_credits);
         assert!(!credits.unlimited);
-        assert!(usage.rate_limit_reset_credits.is_none());
     }
 
     #[test]
@@ -804,22 +876,34 @@ mod tests {
     }
 
     #[test]
-    fn decodes_available_rate_limit_resets() {
-        let usage: WhamUsage = serde_json::from_str(
+    fn decodes_exact_reset_expirations() {
+        let response: ResetCreditsResponse = serde_json::from_str(
             r#"{
-                "rate_limit": null,
-                "rate_limit_reset_credits": {
-                    "available_count": 3
-                },
-                "credits": null
+                "available_count": 2,
+                "credits": [
+                    {
+                        "status": "available",
+                        "expires_at": "2026-07-18T00:11:10.409426Z"
+                    },
+                    {
+                        "status": "redeemed",
+                        "expires_at": "2026-07-20T00:00:00Z"
+                    }
+                ]
             }"#,
         )
-        .expect("reset credit payload should decode");
+        .expect("reset credits response should decode");
 
-        let resets = usage
-            .rate_limit_reset_credits
-            .expect("reset credits should be present");
-        assert_eq!(resets.available_count, 3);
+        let reset_bank = response
+            .into_reset_bank()
+            .expect("reset credits response should normalize");
+        let expiry = reset_bank.expires_at[0]
+            .duration_since(UNIX_EPOCH)
+            .expect("expiry should follow the epoch");
+
+        assert_eq!(reset_bank.available_count, 2);
+        assert_eq!(reset_bank.expires_at.len(), 1);
+        assert_eq!(expiry.subsec_micros(), 409_426);
     }
 
     #[test]

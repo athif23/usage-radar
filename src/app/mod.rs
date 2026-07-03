@@ -18,6 +18,7 @@ use iced::{
     Font, Length, Padding, Shadow, Subscription, Task, Theme,
 };
 use lucide_icons::Icon as LucideIcon;
+use time::{Month, OffsetDateTime, UtcOffset};
 use tray_icon::menu::MenuEvent;
 use tray_icon::{MouseButton, MouseButtonState, TrayIconEvent};
 
@@ -122,6 +123,10 @@ impl App {
             }
             Message::HideCodexCookieSetup => {
                 self.panel.show_codex_cookie_setup = false;
+                Task::none()
+            }
+            Message::ToggleCodexResetDetails => {
+                self.panel.show_codex_reset_details = !self.panel.show_codex_reset_details;
                 Task::none()
             }
             Message::ClearCodexSettings => self.clear_codex_settings(),
@@ -1412,6 +1417,7 @@ impl App {
                     subtitle: None,
                     sections: Vec::new(),
                     metrics: Vec::new(),
+                    reset_bank: None,
                     headline: Some(if self.refresh.in_flight {
                         "Checking usage now".to_string()
                     } else {
@@ -1428,6 +1434,7 @@ impl App {
                     subtitle: None,
                     sections: Vec::new(),
                     metrics: Vec::new(),
+                    reset_bank: None,
                     headline: Some(if self.copilot_auth.is_busy() || self.copilot_auth.awaiting_snapshot {
                         "Checking Copilot status".to_string()
                     } else if self.refresh.in_flight || self.copilot_auth.has_saved_token {
@@ -1452,6 +1459,7 @@ impl App {
                     subtitle: None,
                     sections: Vec::new(),
                     metrics: Vec::new(),
+                    reset_bank: None,
                     headline: Some(if self.refresh.in_flight {
                         "Looking for an OpenCode Go session".to_string()
                     } else {
@@ -1471,6 +1479,7 @@ impl App {
                     subtitle: None,
                     sections: Vec::new(),
                     metrics: Vec::new(),
+                    reset_bank: None,
                     headline: Some("Support not wired yet".to_string()),
                     detail: Some(
                         "This page stays visible, but Usage Radar will not invent data until a trustworthy source exists."
@@ -1493,6 +1502,7 @@ impl App {
                 subtitle: snapshot_subtitle(snapshot),
                 sections: Vec::new(),
                 metrics: Vec::new(),
+                reset_bank: None,
                 headline: Some(headline),
                 detail: Some(first_meaningful_note(snapshot).unwrap_or_else(|| {
                     if kind == ProviderKind::OpenCodeGo {
@@ -1507,15 +1517,23 @@ impl App {
         }
 
         let sections = provider_sections(kind, snapshot);
-        let metrics = provider_metrics(kind, snapshot);
+        let show_reset_expirations = self.panel.selected_provider == Some(kind);
+        let metrics = provider_metrics(kind, snapshot, show_reset_expirations);
+        let reset_bank = codex_reset_bank_disclosure_model(
+            kind,
+            snapshot,
+            show_reset_expirations,
+            self.panel.show_codex_reset_details,
+        );
 
-        if sections.is_empty() && metrics.is_empty() {
+        if sections.is_empty() && metrics.is_empty() && reset_bank.is_none() {
             return ProviderCardModel {
                 title,
                 accent,
                 subtitle: snapshot_subtitle(snapshot),
                 sections,
                 metrics,
+                reset_bank,
                 headline: Some("Snapshot available".to_string()),
                 detail: Some(first_meaningful_note(snapshot).unwrap_or_else(|| {
                     "The provider responded, but no displayable sections were returned yet."
@@ -1530,6 +1548,7 @@ impl App {
             subtitle: snapshot_subtitle(snapshot),
             sections,
             metrics,
+            reset_bank,
             headline: None,
             detail: None,
         }
@@ -1648,6 +1667,7 @@ struct ProviderCardModel {
     subtitle: Option<String>,
     sections: Vec<ProviderSection>,
     metrics: Vec<ProviderMetric>,
+    reset_bank: Option<ResetBankDisclosure>,
     headline: Option<String>,
     detail: Option<String>,
 }
@@ -1667,6 +1687,16 @@ struct ProviderMetric {
     unit: Option<String>,
     detail: Option<String>,
     accent: Color,
+}
+
+#[derive(Debug, Clone)]
+struct ResetBankDisclosure {
+    available_count: u32,
+    unit: String,
+    subline: String,
+    expirations: Vec<String>,
+    expiry_unavailable: bool,
+    expanded: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1834,6 +1864,7 @@ fn provider_list_row(model: ProviderCardModel) -> Element<'static, Message> {
         subtitle,
         sections,
         metrics,
+        reset_bank: _,
         headline,
         detail,
     } = model;
@@ -1958,6 +1989,10 @@ fn provider_panel_body(
         body = body.push(provider_section(section));
     }
 
+    if let Some(disclosure) = model.reset_bank {
+        body = body.push(reset_bank_disclosure(disclosure));
+    }
+
     for metric in model.metrics {
         body = body.push(provider_metric(metric));
     }
@@ -2012,6 +2047,85 @@ fn provider_metric(metric: ProviderMetric) -> Element<'static, Message> {
 
     if let Some(detail) = metric.detail {
         body = body.push(text(detail).size(11).color(color_muted()));
+    }
+
+    body.into()
+}
+
+fn reset_bank_disclosure(disclosure: ResetBankDisclosure) -> Element<'static, Message> {
+    let ResetBankDisclosure {
+        available_count,
+        unit,
+        subline,
+        expirations,
+        expiry_unavailable,
+        expanded,
+    } = disclosure;
+
+    let accent = provider_accent(ProviderKind::Codex);
+    let count = text(format!("{available_count} {unit}"))
+        .size(14)
+        .font(weighted_font(font::Weight::Semibold))
+        .color(accent);
+    let label = text("Reset bank")
+        .size(14)
+        .font(weighted_font(font::Weight::Semibold))
+        .color(color_text());
+
+    let mut body = column![].spacing(6);
+
+    if available_count == 0 {
+        body = body.push(
+            row![label, horizontal_space(), count]
+                .spacing(8)
+                .align_y(Alignment::Center)
+                .width(Length::Fill),
+        );
+        body = body.push(text("No active resets").size(11).color(color_muted()));
+    } else {
+        let chevron_icon = if expanded {
+            LucideIcon::ChevronDown
+        } else {
+            LucideIcon::ChevronRight
+        };
+        let chevron = text(char::from(chevron_icon).to_string())
+            .font(Font::with_name("lucide"))
+            .size(14)
+            .color(color_muted());
+        let header = row![label, horizontal_space(), count, chevron]
+            .spacing(8)
+            .align_y(Alignment::Center)
+            .width(Length::Fill);
+        let row_content = column![header, text(subline).size(11).color(color_muted())].spacing(4);
+
+        body = body.push(
+            button(row_content)
+                .width(Length::Fill)
+                .padding([6, 4])
+                .style(disclosure_row_style)
+                .on_press(Message::ToggleCodexResetDetails),
+        );
+
+        if expanded {
+            let mut list = column![].spacing(4);
+            list = list.push(text("Expires").size(11).color(color_muted()));
+            if expiry_unavailable {
+                list = list.push(
+                    text("Expiry dates unavailable from Codex")
+                        .size(12)
+                        .color(color_muted()),
+                );
+            } else {
+                for expiry in expirations {
+                    list = list.push(text(expiry).size(12).color(color_muted()));
+                }
+            }
+            body = body.push(
+                container(list)
+                    .padding(Padding::ZERO.top(2.0).left(12.0))
+                    .width(Length::Fill),
+            );
+        }
     }
 
     body.into()
@@ -2559,15 +2673,19 @@ fn provider_sections(kind: ProviderKind, snapshot: &ProviderSnapshot) -> Vec<Pro
     }
 }
 
-fn provider_metrics(kind: ProviderKind, snapshot: &ProviderSnapshot) -> Vec<ProviderMetric> {
+fn provider_metrics(
+    kind: ProviderKind,
+    snapshot: &ProviderSnapshot,
+    show_reset_expirations: bool,
+) -> Vec<ProviderMetric> {
     let mut metrics = Vec::new();
 
-    if kind == ProviderKind::Codex {
-        if let Some(available_resets) = snapshot.available_resets {
+    if kind == ProviderKind::Codex && !show_reset_expirations {
+        if let Some(reset_bank) = snapshot.reset_bank.as_ref() {
             metrics.push(ProviderMetric {
-                value: available_resets.to_string(),
+                value: reset_bank.available_count.to_string(),
                 unit: Some(
-                    if available_resets == 1 {
+                    if reset_bank.available_count == 1 {
                         "reset available"
                     } else {
                         "resets available"
@@ -2599,6 +2717,85 @@ fn provider_metrics(kind: ProviderKind, snapshot: &ProviderSnapshot) -> Vec<Prov
     }
 
     metrics
+}
+
+fn format_local_timestamp(time: SystemTime) -> Option<String> {
+    let expires_at = OffsetDateTime::from(time);
+    let offset = UtcOffset::local_offset_at(expires_at).ok()?;
+    let local = expires_at.to_offset(offset);
+    let offset_seconds = offset.whole_seconds();
+    let offset_sign = if offset_seconds < 0 { '-' } else { '+' };
+    let offset_seconds = offset_seconds.unsigned_abs();
+    let offset_hours = offset_seconds / 3_600;
+    let offset_minutes = offset_seconds % 3_600 / 60;
+
+    Some(format!(
+        "{:02} {} {:04} · {:02}:{:02}:{:02} ({}{:02}:{:02})",
+        local.day(),
+        month_abbrev(local.month()),
+        local.year(),
+        local.hour(),
+        local.minute(),
+        local.second(),
+        offset_sign,
+        offset_hours,
+        offset_minutes,
+    ))
+}
+
+fn month_abbrev(month: Month) -> &'static str {
+    match month {
+        Month::January => "Jan",
+        Month::February => "Feb",
+        Month::March => "Mar",
+        Month::April => "Apr",
+        Month::May => "May",
+        Month::June => "Jun",
+        Month::July => "Jul",
+        Month::August => "Aug",
+        Month::September => "Sep",
+        Month::October => "Oct",
+        Month::November => "Nov",
+        Month::December => "Dec",
+    }
+}
+
+fn codex_reset_bank_disclosure_model(
+    kind: ProviderKind,
+    snapshot: &ProviderSnapshot,
+    show_in_detail: bool,
+    expanded: bool,
+) -> Option<ResetBankDisclosure> {
+    if kind != ProviderKind::Codex || !show_in_detail {
+        return None;
+    }
+
+    let reset_bank = snapshot.reset_bank.as_ref()?;
+    let unit = if reset_bank.available_count == 1 {
+        "reset available"
+    } else {
+        "resets available"
+    };
+    let subline = if snapshot.stale {
+        "Last known resets"
+    } else {
+        "Usage-limit resets"
+    };
+    let expirations = reset_bank
+        .expires_at
+        .iter()
+        .filter_map(|expires_at| format_local_timestamp(*expires_at))
+        .collect::<Vec<_>>();
+    let expiry_unavailable = expirations.is_empty() && reset_bank.available_count > 0;
+
+    Some(ResetBankDisclosure {
+        available_count: reset_bank.available_count,
+        unit: unit.to_string(),
+        subline: subline.to_string(),
+        expirations,
+        expiry_unavailable,
+        expanded,
+    })
 }
 
 fn provider_credit_metric(
@@ -2781,7 +2978,7 @@ fn provider_failure_snapshot(kind: ProviderKind, error: &str) -> ProviderSnapsho
         unavailable: true,
         summary_bar: None,
         detail_bars: Vec::new(),
-        available_resets: None,
+        reset_bank: None,
         credits: None,
         web_credits: None,
         notes: vec![
@@ -3026,6 +3223,25 @@ fn tab_pressed_background() -> Color {
         Color::from_rgba8(132, 122, 158, 0.24)
     } else {
         Color::from_rgba8(255, 255, 255, 0.26)
+    }
+}
+
+fn disclosure_row_style(_theme: &Theme, status: button::Status) -> button::Style {
+    let background = match status {
+        button::Status::Hovered => tab_hover_background(),
+        button::Status::Pressed => tab_pressed_background(),
+        button::Status::Disabled | button::Status::Active => Color::TRANSPARENT,
+    };
+
+    button::Style {
+        background: Some(background.into()),
+        text_color: color_text(),
+        border: Border {
+            width: 0.0,
+            radius: 8.0.into(),
+            color: Color::TRANSPARENT,
+        },
+        shadow: Shadow::default(),
     }
 }
 

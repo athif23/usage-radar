@@ -31,6 +31,13 @@ pub struct CreditBalance {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResetBank {
+    pub available_count: u32,
+    #[serde(default)]
+    pub expires_at: Vec<SystemTime>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderSnapshot {
     pub kind: ProviderKind,
     pub visible: bool,
@@ -41,7 +48,7 @@ pub struct ProviderSnapshot {
     pub summary_bar: Option<LimitBar>,
     pub detail_bars: Vec<LimitBar>,
     #[serde(default)]
-    pub available_resets: Option<u32>,
+    pub reset_bank: Option<ResetBank>,
     #[serde(default)]
     pub credits: Option<CreditBalance>,
     #[serde(default)]
@@ -56,7 +63,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn decodes_cache_snapshot_without_available_resets() {
+    fn decodes_cache_snapshot_without_reset_bank() {
         let snapshot = ProviderSnapshot {
             kind: ProviderKind::Codex,
             visible: true,
@@ -66,7 +73,10 @@ mod tests {
             unavailable: false,
             summary_bar: None,
             detail_bars: Vec::new(),
-            available_resets: Some(3),
+            reset_bank: Some(ResetBank {
+                available_count: 3,
+                expires_at: vec![UNIX_EPOCH],
+            }),
             credits: None,
             web_credits: None,
             notes: Vec::new(),
@@ -75,11 +85,11 @@ mod tests {
         value
             .as_object_mut()
             .expect("snapshot should encode as an object")
-            .remove("available_resets");
+            .remove("reset_bank");
 
         let decoded: ProviderSnapshot =
             serde_json::from_value(value).expect("older cache snapshot should decode");
 
-        assert_eq!(decoded.available_resets, None);
+        assert!(decoded.reset_bank.is_none());
     }
 }
