@@ -3,4 +3,4 @@ sha256=42379f702cd44babb86e5fbe6b1072918e8995c53cf2e5f86d8433a16fd5304b
 bytes=50324
 base64_bytes=67100
 parts=5
-source_revision=initial-gpui-migration
+source_revision=initial-gpui-migration-v2
