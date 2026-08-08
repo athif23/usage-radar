@@ -21,12 +21,17 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - name: Restore project snapshot
+      - name: Restore and patch project snapshot
+        shell: bash
         run: |
           mkdir -p validation/project
           cat .github/validation/project.tar.xz.b64.part* | base64 --decode > validation/project.tar.xz
           tar -xJf validation/project.tar.xz -C validation/project
-          bash .github/validation/apply-overlay.sh validation/project
+          set +e
+          bash .github/validation/apply-overlay.sh validation/project > validation/probe-overlay.log 2>&1
+          overlay=$?
+          set -e
+          printf '%s\n' "$overlay" > validation/probe-overlay.status
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
@@ -48,6 +53,7 @@ jobs:
         shell: bash
         run: |
           set +e
+          overlay=$(cat validation/probe-overlay.status)
           cd validation/project
           cargo generate-lockfile > ../probe-lock.log 2>&1
           lock=$?
@@ -58,8 +64,8 @@ jobs:
           cargo check > ../probe-check.log 2>&1
           check=$?
           cd ../..
-          printf 'run_id=%s\nhead_sha=%s\nlock=%s\nformat_write=%s\nfmt=%s\ncheck=%s\n' \
-            "$GITHUB_RUN_ID" "$GITHUB_SHA" "$lock" "$format_write" "$fmt" "$check" \
+          printf 'run_id=%s\nhead_sha=%s\noverlay=%s\nlock=%s\nformat_write=%s\nfmt=%s\ncheck=%s\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_SHA" "$overlay" "$lock" "$format_write" "$fmt" "$check" \
             > validation/probe-results.txt
           rm -rf validation/project/target
           tar -cJf validation/probe-formatted-project.tar.xz -C validation/project .
@@ -73,7 +79,7 @@ jobs:
           rm -rf "$stage"
           mkdir -p "$stage"
           cp validation/probe-results.txt "$stage/results.txt" || true
-          cp validation/probe-*.log "$stage/" || true
+          cp validation/probe-*.log validation/probe-overlay.status "$stage/" || true
           if [ -f validation/probe-formatted-project.tar.xz ]; then
             base64 -w0 validation/probe-formatted-project.tar.xz > "$stage/formatted-project.tar.xz.b64"
             split -b 16000 -d -a 2 "$stage/formatted-project.tar.xz.b64" "$stage/formatted-project.tar.xz.b64.part"
