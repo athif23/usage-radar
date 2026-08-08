@@ -23,14 +23,24 @@ env:
 jobs:
   validate-linux:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
-      - name: Restore project snapshot
+      - name: Restore and patch project snapshot
+        shell: bash
         run: |
           mkdir -p validation/project
           cat .github/validation/project.tar.xz.b64.part* | base64 --decode > validation/project.tar.xz
           tar -xJf validation/project.tar.xz -C validation/project
+          set +e
+          bash .github/validation/apply-overlay.sh validation/project > validation/overlay.log 2>&1
+          overlay=$?
+          if [ "$overlay" -eq 0 ]; then
+            bash .github/validation/apply-view-overlay.sh validation/project >> validation/overlay.log 2>&1
+            overlay=$?
+          fi
+          set -e
+          printf '%s\n' "$overlay" > validation/overlay.status
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
@@ -45,10 +55,14 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: validation/project
       - name: Format and validate
         shell: bash
         run: |
           set +e
+          overlay=$(cat validation/overlay.status)
           cd validation/project
           cargo generate-lockfile > ../lock.log 2>&1
           lock=$?
@@ -62,14 +76,15 @@ jobs:
           test=$?
           cargo build --release > ../release.log 2>&1
           release=$?
-          if grep -RniE --exclude='Cargo.lock' '\biced\b' Cargo.toml src > ../iced.log 2>&1; then
+          if grep -RniE --exclude-dir='docs' '\biced\b' \
+            Cargo.toml Cargo.lock README.md AGENTS.md MVP.md SPEC.md src .github > ../iced.log 2>&1; then
             iced=1
           else
             iced=0
           fi
           cd ../..
-          printf 'run_id=%s\nhead_sha=%s\nlock=%s\nformat_write=%s\nfmt=%s\ncheck=%s\ntest=%s\nrelease=%s\niced=%s\n' \
-            "$GITHUB_RUN_ID" "$GITHUB_SHA" "$lock" "$format_write" "$fmt" "$check" "$test" "$release" "$iced" \
+          printf 'run_id=%s\nhead_sha=%s\noverlay=%s\nlock=%s\nformat_write=%s\nfmt=%s\ncheck=%s\ntest=%s\nrelease=%s\niced=%s\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_SHA" "$overlay" "$lock" "$format_write" "$fmt" "$check" "$test" "$release" "$iced" \
             | tee validation/results.txt
           rm -rf validation/project/target
           tar -cJf validation/formatted-project.tar.xz -C validation/project .
@@ -81,6 +96,8 @@ jobs:
           path: |
             validation/formatted-project.tar.xz
             validation/results.txt
+            validation/overlay.log
+            validation/overlay.status
             validation/lock.log
             validation/format-write.log
             validation/fmt.log
@@ -99,12 +116,7 @@ jobs:
           rm -rf "$stage"
           mkdir -p "$stage"
           cp validation/results.txt "$stage/results.txt" || true
-          cp validation/*.log "$stage/" || true
-          if [ -f validation/formatted-project.tar.xz ]; then
-            base64 -w0 validation/formatted-project.tar.xz > "$stage/formatted-project.tar.xz.b64"
-            split -b 16000 -d -a 2 "$stage/formatted-project.tar.xz.b64" "$stage/formatted-project.tar.xz.b64.part"
-            rm "$stage/formatted-project.tar.xz.b64"
-          fi
+          cp validation/overlay.log validation/overlay.status validation/*.log "$stage/" || true
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git fetch origin tmp/gpui-migration-validation-20260808
@@ -122,4 +134,4 @@ jobs:
         shell: bash
         run: |
           cat validation/results.txt
-          ! grep -Eq '=(1|[2-9][0-9]*)$' validation/results.txt
+          ! grep -Eq '=[1-9][0-9]*$' validation/results.txt
