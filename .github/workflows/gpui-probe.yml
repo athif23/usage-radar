@@ -30,6 +30,10 @@ jobs:
           set +e
           bash .github/validation/apply-overlay.sh validation/project > validation/probe-overlay.log 2>&1
           overlay=$?
+          if [ "$overlay" -eq 0 ]; then
+            bash .github/validation/apply-view-overlay.sh validation/project >> validation/probe-overlay.log 2>&1
+            overlay=$?
+          fi
           set -e
           printf '%s\n' "$overlay" > validation/probe-overlay.status
       - name: Install Linux build dependencies
