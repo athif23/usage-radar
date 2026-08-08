@@ -10,18 +10,81 @@ on:
 permissions:
   contents: write
 
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+  RUST_BACKTRACE: 1
+
 jobs:
   probe:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - name: Publish heartbeat
+      - name: Restore project snapshot
+        run: |
+          mkdir -p validation/project
+          cat .github/validation/project.tar.xz.b64.part* | base64 --decode > validation/project.tar.xz
+          tar -xJf validation/project.tar.xz -C validation/project
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake libclang-dev pkg-config libssl-dev \
+            libxkbcommon-dev libwayland-dev libx11-dev \
+            libxcb-shape0-dev libxcb-xfixes0-dev \
+            libxcb-randr0-dev libxcb-xinput-dev \
+            libxkbcommon-x11-dev libegl1-mesa-dev \
+            libgles2-mesa-dev libglib2.0-dev libfontconfig-dev \
+            libgtk-3-dev libayatana-appindicator3-dev
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: validation/project
+      - name: Compile project
         shell: bash
         run: |
-          mkdir -p .github/validation/output
-          printf 'run_id=%s\nhead_sha=%s\n' "$GITHUB_RUN_ID" "$GITHUB_SHA" > .github/validation/output/heartbeat.txt
+          set +e
+          cd validation/project
+          cargo generate-lockfile > ../probe-lock.log 2>&1
+          lock=$?
+          cargo fmt --all > ../probe-format-write.log 2>&1
+          format_write=$?
+          cargo fmt --check > ../probe-fmt.log 2>&1
+          fmt=$?
+          cargo check > ../probe-check.log 2>&1
+          check=$?
+          cd ../..
+          printf 'run_id=%s\nhead_sha=%s\nlock=%s\nformat_write=%s\nfmt=%s\ncheck=%s\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_SHA" "$lock" "$format_write" "$fmt" "$check" \
+            > validation/probe-results.txt
+          rm -rf validation/project/target
+          tar -cJf validation/probe-formatted-project.tar.xz -C validation/project .
+      - name: Publish compiler output
+        if: always()
+        shell: bash
+        run: |
+          set -e
+          stage=/tmp/gpui-probe-output
+          output=.github/validation/probe-output
+          rm -rf "$stage"
+          mkdir -p "$stage"
+          cp validation/probe-results.txt "$stage/results.txt" || true
+          cp validation/probe-*.log "$stage/" || true
+          if [ -f validation/probe-formatted-project.tar.xz ]; then
+            base64 -w0 validation/probe-formatted-project.tar.xz > "$stage/formatted-project.tar.xz.b64"
+            split -b 16000 -d -a 2 "$stage/formatted-project.tar.xz.b64" "$stage/formatted-project.tar.xz.b64.part"
+            rm "$stage/formatted-project.tar.xz.b64"
+          fi
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add .github/validation/output/heartbeat.txt
-          git commit -m "ci: publish validation heartbeat [skip ci]"
+          git fetch origin tmp/gpui-migration-validation-20260808
+          git reset --hard origin/tmp/gpui-migration-validation-20260808
+          rm -rf "$output"
+          mkdir -p "$output"
+          cp -a "$stage"/. "$output"/
+          git add "$output"
+          git commit -m "ci: publish GPUI probe output [skip ci]"
           git push origin HEAD:tmp/gpui-migration-validation-20260808
