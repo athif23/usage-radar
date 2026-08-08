@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   CARGO_TERM_COLOR: always
@@ -64,8 +64,8 @@ jobs:
             iced=0
           fi
           cd ../..
-          printf 'lock=%s\nformat_write=%s\nfmt=%s\ncheck=%s\ntest=%s\nrelease=%s\niced=%s\n' \
-            "$lock" "$format_write" "$fmt" "$check" "$test" "$release" "$iced" \
+          printf 'run_id=%s\nhead_sha=%s\nlock=%s\nformat_write=%s\nfmt=%s\ncheck=%s\ntest=%s\nrelease=%s\niced=%s\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_SHA" "$lock" "$format_write" "$fmt" "$check" "$test" "$release" "$iced" \
             | tee validation/results.txt
           rm -rf validation/project/target
           tar -cJf validation/formatted-project.tar.xz -C validation/project .
@@ -85,6 +85,28 @@ jobs:
             validation/release.log
             validation/iced.log
           if-no-files-found: warn
+      - name: Publish validation output to branch
+        if: always()
+        shell: bash
+        run: |
+          set -e
+          output=.github/validation/output
+          rm -rf "$output"
+          mkdir -p "$output"
+          cp validation/results.txt "$output/results.txt" || true
+          cp validation/*.log "$output/" || true
+          if [ -f validation/formatted-project.tar.xz ]; then
+            base64 -w0 validation/formatted-project.tar.xz > "$output/formatted-project.tar.xz.b64"
+            split -b 16000 -d -a 2 "$output/formatted-project.tar.xz.b64" "$output/formatted-project.tar.xz.b64.part"
+            rm "$output/formatted-project.tar.xz.b64"
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$output"
+          if ! git diff --cached --quiet; then
+            git commit -m "ci: publish GPUI validation output [skip ci]"
+            git push origin HEAD:tmp/gpui-migration-validation-20260808
+          fi
       - name: Fail on validation errors
         if: always()
         shell: bash
