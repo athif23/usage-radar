@@ -21,8 +21,8 @@
 [1m[92m   Compiling[0m arrayvec v0.7.8
 [1m[92m   Compiling[0m futures-lite v2.6.1
 [1m[92m   Compiling[0m bitflags v2.13.1
-[1m[92m   Compiling[0m erased-serde v0.4.10
 [1m[92m   Compiling[0m serde_fmt v1.1.0
+[1m[92m   Compiling[0m erased-serde v0.4.10
 [1m[92m   Compiling[0m serde v1.0.229
 [1m[92m   Compiling[0m rustix v1.1.4
 [1m[92m   Compiling[0m value-bag-serde1 v1.13.2
@@ -48,15 +48,15 @@
 [1m[92m   Compiling[0m tracing v0.1.44
 [1m[92m   Compiling[0m dlib v0.5.3
 [1m[92m   Compiling[0m itoa v1.0.18
-[1m[92m   Compiling[0m thiserror v1.0.69
 [1m[92m   Compiling[0m zerovec v0.11.6
+[1m[92m   Compiling[0m thiserror v1.0.69
 [1m[92m   Compiling[0m gobject-sys v0.18.0
 [1m[92m   Compiling[0m generic-array v0.14.7
 [1m[92m   Compiling[0m crc32fast v1.5.0
 [1m[92m   Compiling[0m getrandom v0.4.3
 [1m[92m   Compiling[0m indexmap v2.14.0
-[1m[92m   Compiling[0m polling v3.11.0
 [1m[92m   Compiling[0m num-integer v0.1.46
+[1m[92m   Compiling[0m polling v3.11.0
 [1m[92m   Compiling[0m flate2 v1.1.9
 [1m[92m   Compiling[0m zeroize v1.9.0
 [1m[92m   Compiling[0m wayland-sys v0.31.11
@@ -64,8 +64,8 @@
 [1m[92m   Compiling[0m bytes v1.12.1
 [1m[92m   Compiling[0m sha1_smol v1.0.1
 [1m[92m   Compiling[0m lock_api v0.4.14
-[1m[92m   Compiling[0m uuid v1.24.0
 [1m[92m   Compiling[0m gio-sys v0.18.1
+[1m[92m   Compiling[0m uuid v1.24.0
 [1m[92m   Compiling[0m async-io v2.6.0
 [1m[92m   Compiling[0m crossbeam-epoch v0.9.20
 [1m[92m   Compiling[0m tinystr v0.8.3
@@ -74,13 +74,13 @@
 [1m[92m   Compiling[0m errno v0.3.14
 [1m[92m   Compiling[0m syn v2.0.119
 [1m[92m   Compiling[0m litemap v0.8.2
+[1m[92m   Compiling[0m subtle v2.6.1
 [1m[92m   Compiling[0m either v1.17.0
 [1m[92m   Compiling[0m writeable v0.6.3
-[1m[92m   Compiling[0m subtle v2.6.1
 [1m[92m   Compiling[0m icu_locale_core v2.2.0
-[1m[92m   Compiling[0m signal-hook-registry v1.4.8
-[1m[92m   Compiling[0m num-rational v0.4.2
 [1m[92m   Compiling[0m blocking v1.6.2
+[1m[92m   Compiling[0m num-rational v0.4.2
+[1m[92m   Compiling[0m signal-hook-registry v1.4.8
 [1m[92m   Compiling[0m crossbeam-deque v0.8.7
 [1m[92m   Compiling[0m half v2.7.1
 [1m[92m   Compiling[0m zerotrie v0.2.4
@@ -92,73 +92,73 @@
 [1m[92m   Compiling[0m getrandom v0.2.17
 [1m[92m   Compiling[0m core_maths v0.1.1
 [1m[92m   Compiling[0m utf8_iter v1.0.4
-[1m[92m   Compiling[0m foldhash v0.2.0
 [1m[92m   Compiling[0m allocator-api2 v0.2.21
+[1m[92m   Compiling[0m foldhash v0.2.0
 [1m[92m   Compiling[0m icu_collections v2.2.0
 [1m[92m   Compiling[0m icu_provider v2.2.0
 [1m[92m   Compiling[0m hashbrown v0.16.1
 [1m[92m   Compiling[0m rayon-core v1.13.0
-[1m[92m   Compiling[0m async-signal v0.2.14
 [1m[92m   Compiling[0m zvariant_utils v3.5.0
 [1m[92m   Compiling[0m zvariant v5.13.1
+[1m[92m   Compiling[0m async-signal v0.2.14
 [1m[92m   Compiling[0m percent-encoding v2.3.2
+[1m[92m   Compiling[0m async-process v2.5.0
 [1m[92m   Compiling[0m profiling v1.0.18
 [1m[92m   Compiling[0m equator v0.4.2
-[1m[92m   Compiling[0m async-process v2.5.0
 [1m[92m   Compiling[0m parking_lot_core v0.9.12
 [1m[92m   Compiling[0m anyhow v1.0.104
-[1m[92m   Compiling[0m icu_properties_data v2.2.0
 [1m[92m   Compiling[0m icu_normalizer_data v2.2.0
+[1m[92m   Compiling[0m icu_properties_data v2.2.0
 [1m[92m   Compiling[0m http v1.5.0
 [1m[92m   Compiling[0m async-executor v1.14.0
 [1m[92m   Compiling[0m num-complex v0.4.6
 [1m[92m   Compiling[0m static_assertions v1.1.0
-[1m[92m   Compiling[0m icu_normalizer v2.2.0
 [1m[92m   Compiling[0m icu_properties v2.2.0
+[1m[92m   Compiling[0m icu_normalizer v2.2.0
 [1m[92m   Compiling[0m parking_lot v0.12.5
 [1m[92m   Compiling[0m aligned-vec v0.6.4
 [1m[92m   Compiling[0m getrandom v0.3.4
 [1m[92m   Compiling[0m rayon v1.12.0
 [1m[92m   Compiling[0m block-buffer v0.10.4
-[1m[92m   Compiling[0m fdeflate v0.3.7
 [1m[92m   Compiling[0m zbus_names v4.3.4
+[1m[92m   Compiling[0m fdeflate v0.3.7
 [1m[92m   Compiling[0m euclid v0.22.14
-[1m[92m   Compiling[0m scoped-tls v1.0.1
-[1m[92m   Compiling[0m raw-window-handle v0.6.2
-[1m[92m   Compiling[0m downcast-rs v1.2.1
 [1m[92m   Compiling[0m regex-syntax v0.8.11
+[1m[92m   Compiling[0m scoped-tls v1.0.1
+[1m[92m   Compiling[0m downcast-rs v1.2.1
+[1m[92m   Compiling[0m raw-window-handle v0.6.2
 [1m[92m   Compiling[0m wayland-backend v0.3.16
 [1m[92m   Compiling[0m idna_adapter v1.2.2
 [1m[92m   Compiling[0m digest v0.10.7
-[1m[92m   Compiling[0m rand_core v0.9.5
 [1m[92m   Compiling[0m v_frame v0.3.9
+[1m[92m   Compiling[0m rand_core v0.9.5
 [1m[92m   Compiling[0m slotmap v1.1.1
-[1m[92m   Compiling[0m glib v0.18.5
 [1m[92m   Compiling[0m zmij v1.0.23
+[1m[92m   Compiling[0m glib v0.18.5
 [1m[92m   Compiling[0m form_urlencoded v1.2.2
+[1m[92m   Compiling[0m regex-automata v0.4.18
 [1m[92m   Compiling[0m ttf-parser v0.25.1
 [1m[92m   Compiling[0m ppv-lite86 v0.2.21
-[1m[92m   Compiling[0m regex-automata v0.4.18
 [1m[92m   Compiling[0m async-broadcast v0.7.2
 [1m[92m   Compiling[0m as-slice v0.2.1
 [1m[92m   Compiling[0m memmap2 v0.9.11
 [1m[92m   Compiling[0m ordered-stream v0.2.0
-[1m[92m   Compiling[0m weezl v0.1.12
 [1m[92m   Compiling[0m option-ext v0.2.0
-[1m[92m   Compiling[0m bit-vec v0.9.1
-[1m[92m   Compiling[0m unicode-width v0.2.2
-[1m[92m   Compiling[0m quick-error v2.0.1
-[1m[92m   Compiling[0m base64 v0.22.1
-[1m[92m   Compiling[0m roxmltree v0.20.0
 [1m[92m   Compiling[0m hex v0.4.3
+[1m[92m   Compiling[0m quick-error v2.0.1
+[1m[92m   Compiling[0m bit-vec v0.9.1
 [1m[92m   Compiling[0m tinyvec_macros v0.1.1
+[1m[92m   Compiling[0m base64 v0.22.1
 [1m[92m   Compiling[0m float-cmp v0.9.0
+[1m[92m   Compiling[0m unicode-width v0.2.2
+[1m[92m   Compiling[0m weezl v0.1.12
+[1m[92m   Compiling[0m roxmltree v0.20.0
+[1m[92m   Compiling[0m codespan-reporting v0.13.1
+[1m[92m   Compiling[0m fontconfig-parser v0.5.8
 [1m[92m   Compiling[0m strict-num v0.1.1
 [1m[92m   Compiling[0m tinyvec v1.12.0
-[1m[92m   Compiling[0m zbus v5.18.0
-[1m[92m   Compiling[0m fontconfig-parser v0.5.8
-[1m[92m   Compiling[0m codespan-reporting v0.13.1
 [1m[92m   Compiling[0m bit-set v0.9.1
+[1m[92m   Compiling[0m zbus v5.18.0
 [1m[92m   Compiling[0m pin-project v1.1.13
 [1m[92m   Compiling[0m aligned v0.4.3
 [1m[92m   Compiling[0m rand_chacha v0.9.0
@@ -166,29 +166,29 @@
 [1m[92m   Compiling[0m wayland-client v0.31.15
 [1m[92m   Compiling[0m idna v1.1.0
 [1m[92m   Compiling[0m pango-sys v0.18.0
-[1m[92m   Compiling[0m cairo-sys-rs v0.18.2
 [1m[92m   Compiling[0m gdk-pixbuf-sys v0.18.0
+[1m[92m   Compiling[0m cairo-sys-rs v0.18.2
 [1m[92m   Compiling[0m lyon_geom v1.0.19
 [1m[92m   Compiling[0m itertools v0.14.0
 [1m[92m   Compiling[0m block-padding v0.3.3
 [1m[92m   Compiling[0m spirv v0.4.0+sdk-1.4.341.0
 [1m[92m   Compiling[0m nom v8.0.0
 [1m[92m   Compiling[0m no_std_io2 v0.9.4
-[1m[92m   Compiling[0m y4m v0.8.0
-[1m[92m   Compiling[0m color_quant v1.1.0
-[1m[92m   Compiling[0m unicode-script v0.5.8
 [1m[92m   Compiling[0m hexf-parse v0.2.1
-[1m[92m   Compiling[0m arrayref v0.3.9
-[1m[92m   Compiling[0m rustc-hash v1.1.0
-[1m[92m   Compiling[0m byteorder v1.5.0
-[1m[92m   Compiling[0m foldhash v0.1.5
 [1m[92m   Compiling[0m bitflags v1.3.2
-[1m[92m   Compiling[0m png v0.17.16
+[1m[92m   Compiling[0m rustc-hash v1.1.0
+[1m[92m   Compiling[0m y4m v0.8.0
+[1m[92m   Compiling[0m foldhash v0.1.5
+[1m[92m   Compiling[0m color_quant v1.1.0
+[1m[92m   Compiling[0m byteorder v1.5.0
+[1m[92m   Compiling[0m arrayref v0.3.9
+[1m[92m   Compiling[0m unicode-script v0.5.8
+[1m[92m   Compiling[0m tiny-skia-path v0.11.4
 [1m[92m   Compiling[0m hashbrown v0.15.5
 [1m[92m   Compiling[0m naga v29.0.4
-[1m[92m   Compiling[0m av1-grain v0.2.5
-[1m[92m   Compiling[0m tiny-skia-path v0.11.4
 [1m[92m   Compiling[0m av-scenechange v0.14.1
+[1m[92m   Compiling[0m av1-grain v0.2.5
+[1m[92m   Compiling[0m png v0.17.16
 [1m[92m   Compiling[0m ref-cast v1.0.26
 [1m[92m   Compiling[0m bitstream-io v4.10.0
 [1m[92m   Compiling[0m inout v0.1.4
@@ -198,40 +198,40 @@
 [1m[92m   Compiling[0m fontdb v0.23.0
 [1m[92m   Compiling[0m ash v0.38.0+1.3.281
 [1m[92m   Compiling[0m maybe-rayon v0.1.1
-[1m[92m   Compiling[0m zbus_xml v5.2.1
 [1m[92m   Compiling[0m wgpu-types v29.0.4
+[1m[92m   Compiling[0m zbus_xml v5.2.1
 [1m[92m   Compiling[0m accesskit v0.24.1
 [1m[92m   Compiling[0m futures v0.3.33
-[1m[92m   Compiling[0m gpu-descriptor-types v0.2.0
 [1m[92m   Compiling[0m raw-cpuid v11.6.0
+[1m[92m   Compiling[0m gpu-descriptor-types v0.2.0
 [1m[92m   Compiling[0m kurbo v0.11.3
-[1m[92m   Compiling[0m socket2 v0.6.5
 [1m[92m   Compiling[0m mio v1.2.2
+[1m[92m   Compiling[0m socket2 v0.6.5
 [1m[92m   Compiling[0m rgb v0.8.53
-[1m[92m   Compiling[0m new_debug_unreachable v1.0.6
-[1m[92m   Compiling[0m byteorder-lite v0.1.0
-[1m[92m   Compiling[0m pulp-wasm-simd-flag v0.1.1
-[1m[92m   Compiling[0m gimli v0.32.3
-[1m[92m   Compiling[0m imgref v1.12.2
-[1m[92m   Compiling[0m presser v0.3.1
-[1m[92m   Compiling[0m unicode-ccc v0.4.0
-[1m[92m   Compiling[0m zune-core v0.5.3
-[1m[92m   Compiling[0m rustc-hash v2.1.3
-[1m[92m   Compiling[0m unicode-properties v0.1.4
 [1m[92m   Compiling[0m reborrow v0.5.5
-[1m[92m   Compiling[0m dyn-clone v1.0.20
+[1m[92m   Compiling[0m zune-core v0.5.3
+[1m[92m   Compiling[0m pulp-wasm-simd-flag v0.1.1
+[1m[92m   Compiling[0m unicode-properties v0.1.4
+[1m[92m   Compiling[0m byteorder-lite v0.1.0
+[1m[92m   Compiling[0m presser v0.3.1
+[1m[92m   Compiling[0m imgref v1.12.2
+[1m[92m   Compiling[0m gimli v0.32.3
 [1m[92m   Compiling[0m unicode-bidi-mirroring v0.4.0
+[1m[92m   Compiling[0m new_debug_unreachable v1.0.6
+[1m[92m   Compiling[0m rustc-hash v2.1.3
+[1m[92m   Compiling[0m dyn-clone v1.0.20
 [1m[92m   Compiling[0m unicode-bidi v0.3.18
+[1m[92m   Compiling[0m unicode-ccc v0.4.0
 [1m[92m   Compiling[0m rustybuzz v0.20.1
 [1m[92m   Compiling[0m addr2line v0.25.1
 [1m[92m   Compiling[0m schemars v1.2.2
-[1m[92m   Compiling[0m pulp v0.22.3
-[1m[92m   Compiling[0m wgpu-naga-bridge v29.0.4
 [1m[92m   Compiling[0m rav1e v0.8.1
-[1m[92m   Compiling[0m gpu-allocator v0.28.0
-[1m[92m   Compiling[0m zune-jpeg v0.5.15
+[1m[92m   Compiling[0m wgpu-naga-bridge v29.0.4
 [1m[92m   Compiling[0m loop9 v0.1.5
+[1m[92m   Compiling[0m gpu-allocator v0.28.0
 [1m[92m   Compiling[0m image-webp v0.2.4
+[1m[92m   Compiling[0m zune-jpeg v0.5.15
+[1m[92m   Compiling[0m pulp v0.22.3
 [1m[92m   Compiling[0m tokio v1.53.1
 [1m[92m   Compiling[0m svgtypes v0.15.3
 [1m[92m   Compiling[0m gpu-descriptor v0.3.2
@@ -239,9 +239,9 @@
 [1m[92m   Compiling[0m psm v0.1.32
 [1m[92m   Compiling[0m cipher v0.4.4
 [1m[92m   Compiling[0m pathfinder_simd v0.5.6
+[1m[92m   Compiling[0m object v0.37.3
 [1m[92m   Compiling[0m khronos-egl v6.0.0
 [1m[92m   Compiling[0m gio v0.18.4
-[1m[92m   Compiling[0m object v0.37.3
 [1m[92m   Compiling[0m hash32 v0.3.1
 [1m[92m   Compiling[0m gdk-sys v0.18.2
 [1m[92m   Compiling[0m hmac v0.12.1
@@ -255,35 +255,35 @@
 [1m[92m   Compiling[0m ordered-float v5.3.0
 [1m[92m   Compiling[0m font-types v0.11.3
 [1m[92m   Compiling[0m font-types v0.12.2
-[1m[92m   Compiling[0m smol_str v0.3.6
-[1m[92m   Compiling[0m cpufeatures v0.2.17
-[1m[92m   Compiling[0m lebe v0.5.3
-[1m[92m   Compiling[0m pico-args v0.5.0
-[1m[92m   Compiling[0m bit_field v0.10.3
-[1m[92m   Compiling[0m float_next_after v1.0.0
-[1m[92m   Compiling[0m renderdoc-sys v1.1.0
-[1m[92m   Compiling[0m iana-time-zone v0.1.65
-[1m[92m   Compiling[0m waker-fn v1.2.0
-[1m[92m   Compiling[0m unicode-vo v0.1.0
-[1m[92m   Compiling[0m pxfm v0.1.30
-[1m[92m   Compiling[0m data-url v0.3.2
-[1m[92m   Compiling[0m xmlwriter v0.1.0
-[1m[92m   Compiling[0m rustc-demangle v0.1.28
-[1m[92m   Compiling[0m fax v0.2.7
-[1m[92m   Compiling[0m imagesize v0.13.0
 [1m[92m   Compiling[0m zune-core v0.4.12
+[1m[92m   Compiling[0m unicode-vo v0.1.0
+[1m[92m   Compiling[0m iana-time-zone v0.1.65
 [1m[92m   Compiling[0m glow v0.17.0
+[1m[92m   Compiling[0m renderdoc-sys v1.1.0
+[1m[92m   Compiling[0m data-url v0.3.2
+[1m[92m   Compiling[0m rustc-demangle v0.1.28
+[1m[92m   Compiling[0m xmlwriter v0.1.0
+[1m[92m   Compiling[0m fax v0.2.7
+[1m[92m   Compiling[0m waker-fn v1.2.0
+[1m[92m   Compiling[0m lebe v0.5.3
+[1m[92m   Compiling[0m float_next_after v1.0.0
+[1m[92m   Compiling[0m pico-args v0.5.0
+[1m[92m   Compiling[0m smol_str v0.3.6
+[1m[92m   Compiling[0m bit_field v0.10.3
+[1m[92m   Compiling[0m pxfm v0.1.30
+[1m[92m   Compiling[0m imagesize v0.13.0
+[1m[92m   Compiling[0m cpufeatures v0.2.17
 [1m[92m   Compiling[0m usvg v0.45.1
-[1m[92m   Compiling[0m moxcms v0.8.1
 [1m[92m   Compiling[0m wgpu-hal v29.0.4
-[1m[92m   Compiling[0m zune-jpeg v0.4.21
+[1m[92m   Compiling[0m moxcms v0.8.1
+[1m[92m   Compiling[0m exr v1.74.2
+[1m[92m   Compiling[0m lyon_tessellation v1.0.20
 [1m[92m   Compiling[0m tiff v0.11.3
 [1m[92m   Compiling[0m backtrace v0.3.76
 [1m[92m   Compiling[0m chrono v0.4.45
-[1m[92m   Compiling[0m exr v1.74.2
-[1m[92m   Compiling[0m lyon_tessellation v1.0.20
 [1m[92m   Compiling[0m read-fonts v0.41.0
 [1m[92m   Compiling[0m read-fonts v0.37.0
+[1m[92m   Compiling[0m zune-jpeg v0.4.21
 [1m[92m   Compiling[0m ravif v0.13.0
 [1m[92m   Compiling[0m flume v0.11.1
 [1m[92m   Compiling[0m heapless v0.9.3
@@ -303,82 +303,82 @@
 [1m[92m   Compiling[0m rustls-pki-types v1.15.1
 [1m[92m   Compiling[0m qoi v0.4.1
 [1m[92m   Compiling[0m crossbeam-queue v0.3.13
-[1m[92m   Compiling[0m ryu v1.0.23
-[1m[92m   Compiling[0m compression-core v0.4.32
-[1m[92m   Compiling[0m deflate64 v0.1.12
-[1m[92m   Compiling[0m pollster v0.2.5
-[1m[92m   Compiling[0m as-raw-xcb-connection v1.0.1
-[1m[92m   Compiling[0m fixedbitset v0.5.7
-[1m[92m   Compiling[0m web-time v1.1.0
-[1m[92m   Compiling[0m link-section v0.19.2
-[1m[92m   Compiling[0m xcursor v0.3.11
-[1m[92m   Compiling[0m grid v1.0.1
 [1m[92m   Compiling[0m untrusted v0.9.0
 [1m[92m   Compiling[0m atomic v0.5.3
+[1m[92m   Compiling[0m as-raw-xcb-connection v1.0.1
+[1m[92m   Compiling[0m fixedbitset v0.5.7
 [1m[92m   Compiling[0m svg_fmt v0.4.5
-[1m[92m   Compiling[0m postage v0.5.0
-[1m[92m   Compiling[0m taffy v0.10.1
-[1m[92m   Compiling[0m etagere v0.2.15
-[1m[92m   Compiling[0m ring v0.17.14
+[1m[92m   Compiling[0m compression-core v0.4.32
+[1m[92m   Compiling[0m grid v1.0.1
+[1m[92m   Compiling[0m web-time v1.1.0
+[1m[92m   Compiling[0m deflate64 v0.1.12
+[1m[92m   Compiling[0m xcursor v0.3.11
+[1m[92m   Compiling[0m link-section v0.19.2
+[1m[92m   Compiling[0m pollster v0.2.5
+[1m[92m   Compiling[0m ryu v1.0.23
 [1m[92m   Compiling[0m ctor v1.0.12
-[1m[92m   Compiling[0m futures-concurrency v7.7.1
+[1m[92m   Compiling[0m postage v0.5.0
 [1m[92m   Compiling[0m compression-codecs v0.4.38
+[1m[92m   Compiling[0m taffy v0.10.1
 [1m[92m   Compiling[0m gpui_scheduler v0.2.2 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
+[1m[92m   Compiling[0m etagere v0.2.15
+[1m[92m   Compiling[0m futures-concurrency v7.7.1
+[1m[92m   Compiling[0m image v0.25.10
+[1m[92m   Compiling[0m ring v0.17.14
 [1m[92m   Compiling[0m gpui_refineable v0.2.2 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
 [1m[92m   Compiling[0m stacksafe v1.0.3
 [1m[92m   Compiling[0m strum v0.27.2
-[1m[92m   Compiling[0m image v0.25.10
 [1m[92m   Compiling[0m resvg v0.45.1
 [1m[92m   Compiling[0m lyon v1.0.19
 [1m[92m   Compiling[0m skrifa v0.44.0
 [1m[92m   Compiling[0m gpui_sum_tree v0.2.2 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
 [1m[92m   Compiling[0m memoffset v0.9.1
 [1m[92m   Compiling[0m derive_more v2.1.1
-[1m[92m   Compiling[0m pango v0.18.3
 [1m[92m   Compiling[0m gdk-pixbuf v0.18.5
+[1m[92m   Compiling[0m pango v0.18.3
 [1m[92m   Compiling[0m wgpu-core-deps-windows-linux-android v29.0.4
-[1m[92m   Compiling[0m gpui_shared_string v0.1.0 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
-[1m[92m   Compiling[0m aes v0.8.4
 [1m[92m   Compiling[0m sha2 v0.10.9
+[1m[92m   Compiling[0m aes v0.8.4
+[1m[92m   Compiling[0m gpui_shared_string v0.1.0 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
 [1m[92m   Compiling[0m num v0.4.3
 [1m[92m   Compiling[0m gtk-sys v0.18.2
 [1m[92m   Compiling[0m hkdf v0.12.4
 [1m[92m   Compiling[0m cbc v0.1.2
 [1m[92m   Compiling[0m globset v0.4.20
 [1m[92m   Compiling[0m cairo-rs v0.18.5
-[1m[92m   Compiling[0m dirs-sys v0.4.1
 [1m[92m   Compiling[0m dirs-sys v0.5.0
+[1m[92m   Compiling[0m dirs-sys v0.4.1
 [1m[92m   Compiling[0m async-fs v2.2.0
 [1m[92m   Compiling[0m phf_shared v0.13.1
 [1m[92m   Compiling[0m spin v0.10.1
 [1m[92m   Compiling[0m gethostname v1.1.0
 [1m[92m   Compiling[0m num_cpus v1.17.0
-[1m[92m   Compiling[0m inventory v0.3.24
 [1m[92m   Compiling[0m zeno v0.3.3
-[1m[92m   Compiling[0m try-lock v0.2.5
-[1m[92m   Compiling[0m seahash v4.1.0
-[1m[92m   Compiling[0m pollster v0.4.0
-[1m[92m   Compiling[0m yazi v0.2.1
-[1m[92m   Compiling[0m x11rb-protocol v0.13.2
 [1m[92m   Compiling[0m linux-raw-sys v0.4.15
+[1m[92m   Compiling[0m pollster v0.4.0
+[1m[92m   Compiling[0m inventory v0.3.24
+[1m[92m   Compiling[0m seahash v4.1.0
+[1m[92m   Compiling[0m x11rb-protocol v0.13.2
 [1m[92m   Compiling[0m tower-service v0.3.3
+[1m[92m   Compiling[0m try-lock v0.2.5
+[1m[92m   Compiling[0m yazi v0.2.1
+[1m[92m   Compiling[0m want v0.3.1
+[1m[92m   Compiling[0m gpui v0.2.2 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
 [1m[92m   Compiling[0m swash v0.2.10
 [1m[92m   Compiling[0m rustix v0.38.44
-[1m[92m   Compiling[0m gpui v0.2.2 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
-[1m[92m   Compiling[0m want v0.3.1
 [1m[92m   Compiling[0m phf v0.13.1
-[1m[92m   Compiling[0m dirs v6.0.0
 [1m[92m   Compiling[0m gdk v0.18.2
 [1m[92m   Compiling[0m dirs v5.0.1
+[1m[92m   Compiling[0m dirs v6.0.0
 [1m[92m   Compiling[0m rust-embed-utils v8.12.0
 [1m[92m   Compiling[0m wgpu-core v29.0.4
 [1m[92m   Compiling[0m field-offset v0.3.6
 [1m[92m   Compiling[0m const-random v0.1.18
 [1m[92m   Compiling[0m nix v0.31.3
 [1m[92m   Compiling[0m x11 v2.21.0
-[1m[92m   Compiling[0m async-compression v0.4.43
 [1m[92m   Compiling[0m rustls-webpki v0.103.13
 [1m[92m   Compiling[0m httparse v1.10.1
+[1m[92m   Compiling[0m async-compression v0.4.43
 [1m[92m   Compiling[0m atspi-proxies v0.13.0
 [1m[92m   Compiling[0m x11rb v0.13.2
 [1m[92m   Compiling[0m skrifa v0.40.0
@@ -390,38 +390,38 @@
 [1m[92m   Compiling[0m async-net v2.0.0
 [1m[92m   Compiling[0m is-docker v0.2.0
 [1m[92m   Compiling[0m encoding_rs v0.8.35
-[1m[92m   Compiling[0m fastrand v1.9.0
-[1m[92m   Compiling[0m self_cell v1.3.0
-[1m[92m   Compiling[0m home v0.5.12
-[1m[92m   Compiling[0m unicode-linebreak v0.1.5
-[1m[92m   Compiling[0m sys-locale v0.3.2
-[1m[92m   Compiling[0m lazy_static v1.5.0
-[1m[92m   Compiling[0m rangemap v1.7.1
 [1m[92m   Compiling[0m float-ord v0.3.2
+[1m[92m   Compiling[0m self_cell v1.3.0
+[1m[92m   Compiling[0m rangemap v1.7.1
+[1m[92m   Compiling[0m fastrand v1.9.0
+[1m[92m   Compiling[0m lazy_static v1.5.0
+[1m[92m   Compiling[0m home v0.5.12
+[1m[92m   Compiling[0m sys-locale v0.3.2
 [1m[92m   Compiling[0m linebender_resource_handle v0.1.1
-[1m[92m   Compiling[0m zed-font-kit v0.14.1-zed
-[1m[92m   Compiling[0m cosmic-text v0.19.0
-[1m[92m   Compiling[0m xim-ctext v0.3.0
+[1m[92m   Compiling[0m unicode-linebreak v0.1.5
 [1m[92m   Compiling[0m which v6.0.3
+[1m[92m   Compiling[0m cosmic-text v0.19.0
+[1m[92m   Compiling[0m zed-font-kit v0.14.1-zed
+[1m[92m   Compiling[0m xim-ctext v0.3.0
 [1m[92m   Compiling[0m futures-lite v1.13.0
 [1m[92m   Compiling[0m is-wsl v0.4.0
 [1m[92m   Compiling[0m smol v2.0.2
 [1m[92m   Compiling[0m accesskit_atspi_common v0.19.1
 [1m[92m   Compiling[0m gtk v0.18.2
 [1m[92m   Compiling[0m atspi v0.29.0
-[1m[92m   Compiling[0m hyper v1.11.0
-[1m[92m   Compiling[0m wgpu v29.0.4
-[1m[92m   Compiling[0m rustls v0.23.43
 [1m[92m   Compiling[0m async_zip v0.0.18
+[1m[92m   Compiling[0m wgpu v29.0.4
+[1m[92m   Compiling[0m hyper v1.11.0
+[1m[92m   Compiling[0m rustls v0.23.43
 [1m[92m   Compiling[0m libxdo-sys v0.11.0
 [1m[92m   Compiling[0m command-fds v0.3.3
 [1m[92m   Compiling[0m ahash v0.8.12
 [1m[92m   Compiling[0m rust-embed v8.12.0
 [1m[92m   Compiling[0m nix v0.29.0
 [1m[92m   Compiling[0m libdbus-sys v0.2.7
-[1m[92m   Compiling[0m num-bigint-dig v0.9.1
-[1m[92m   Compiling[0m xim-parser v0.2.2
 [1m[92m   Compiling[0m serde_json_lenient v0.2.4
+[1m[92m   Compiling[0m xim-parser v0.2.2
+[1m[92m   Compiling[0m num-bigint-dig v0.9.1
 [1m[92m   Compiling[0m ashpd v0.13.13
 [1m[92m   Compiling[0m pbkdf2 v0.12.2
 [1m[92m   Compiling[0m md-5 v0.10.6
@@ -429,25 +429,25 @@
 [1m[92m   Compiling[0m tempfile v3.27.0
 [1m[92m   Compiling[0m sync_wrapper v1.0.2
 [1m[92m   Compiling[0m libloading v0.7.4
+[1m[92m   Compiling[0m take-until v0.2.0
+[1m[92m   Compiling[0m hashbrown v0.14.5
+[1m[92m   Compiling[0m ipnet v2.12.1
+[1m[92m   Compiling[0m xkeysym v0.2.1
 [1m[92m   Compiling[0m tower-layer v0.3.3
 [1m[92m   Compiling[0m shlex v1.3.0
-[1m[92m   Compiling[0m ipnet v2.12.1
 [1m[92m   Compiling[0m dunce v1.0.5
-[1m[92m   Compiling[0m xkeysym v0.2.1
-[1m[92m   Compiling[0m hashbrown v0.14.5
-[1m[92m   Compiling[0m take-until v0.2.0
+[1m[92m   Compiling[0m tower v0.5.3
 [1m[92m   Compiling[0m gpui_zed_util v0.2.2 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
 [1m[92m   Compiling[0m xkbcommon v0.8.0
 [1m[92m   Compiling[0m zed-xim v0.4.0-zed
 [1m[92m   Compiling[0m hyper-util v0.1.20
-[1m[92m   Compiling[0m tower v0.5.3
 [1m[92m   Compiling[0m libappindicator-sys v0.9.0
 [1m[92m   Compiling[0m calloop-wayland-source v0.4.1
 [1m[92m   Compiling[0m oo7 v0.6.0
 [1m[92m   Compiling[0m tokio-rustls v0.26.4
 [1m[92m   Compiling[0m dbus v0.9.12
-[1m[92m   Compiling[0m libxdo v0.6.0
 [1m[92m   Compiling[0m gpui_wgpu v0.1.0 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
+[1m[92m   Compiling[0m libxdo v0.6.0
 [1m[92m   Compiling[0m accesskit_unix v0.22.1
 [1m[92m   Compiling[0m open v5.4.1
 [1m[92m   Compiling[0m x11-clipboard v0.9.3
@@ -466,140 +466,26 @@
 [1m[92m   Compiling[0m serde_urlencoded v0.7.1
 [1m[92m   Compiling[0m http-body-util v0.1.4
 [1m[92m   Compiling[0m linux-keyutils v0.2.5
-[1m[92m   Compiling[0m num-conv v0.2.2
 [1m[92m   Compiling[0m time-core v0.1.9
-[1m[92m   Compiling[0m num_threads v0.1.7
 [1m[92m   Compiling[0m powerfmt v0.2.0
+[1m[92m   Compiling[0m num_threads v0.1.7
 [1m[92m   Compiling[0m deranged v0.5.8
+[1m[92m   Compiling[0m num-conv v0.2.2
 [1m[92m   Compiling[0m keyring v3.6.3
 [1m[92m   Compiling[0m reqwest v0.12.28
+[1m[92m   Compiling[0m time v0.3.55
 [1m[92m   Compiling[0m libappindicator v0.9.0
 [1m[92m   Compiling[0m muda v0.17.2
-[1m[92m   Compiling[0m tray-icon v0.21.3
 [1m[92m   Compiling[0m gpui_platform v0.1.0 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
-[1m[92m   Compiling[0m time v0.3.55
 [1m[92m   Compiling[0m gpui_elements v0.1.0 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
+[1m[92m   Compiling[0m tray-icon v0.21.3
 [1m[92m   Compiling[0m usage-radar v0.3.6 (/home/runner/work/usage-radar/usage-radar/validation/project)
-[1m[91merror[0m[1m: unused import: `App as GpuiApp`[0m
-  [1m[94m--> [0msrc/app/mod.rs:11:21
-   [1m[94m|[0m
-[1m[94m11[0m [1m[94m|[0m use gpui::{actions, App as GpuiApp, ClipboardItem, Context, KeyBinding};
-   [1m[94m|[0m                     [1m[91m^^^^^^^^^^^^^^[0m
-   [1m[94m|[0m
-   [1m[94m= [0m[1mnote[0m: `-D unused-imports` implied by `-D warnings`
-   [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(unused_imports)]`
-
-[1m[91merror[0m[1m: unused import: `Confidence`[0m
-  [1m[94m--> [0msrc/app/mod.rs:15:30
-   [1m[94m|[0m
-[1m[94m15[0m [1m[94m|[0m use crate::providers::{self, Confidence, ProviderKind, ProviderSnapshot};
-   [1m[94m|[0m                              [1m[91m^^^^^^^^^^[0m
-
-[1m[91merror[0m[1m: unused import: `Path`[0m
- [1m[94m--> [0msrc/providers/codex.rs:2:17
+[1m[91merror[0m[1m: linking with `cc` failed: exit status: 1[0m
   [1m[94m|[0m
-[1m[94m2[0m [1m[94m|[0m use std::path::{Path, PathBuf};
-  [1m[94m|[0m                 [1m[91m^^^^[0m
+  [1m[94m= [0m[1mnote[0m:  "cc" "-m64" "/home/runner/work/usage-radar/usage-radar/validation/project/target/debug/deps/rustcFnjzIg/symbols.o" "<17 object files omitted>" "-Wl,--as-needed" "-Wl,-Bstatic" "/home/runner/work/usage-radar/usage-radar/validation/project/target/debug/deps/{libgpui_platform-d6ee3856a88ed6e0,libgpui_linux-0fd64ef81f36380d,libaccesskit_unix-6cf759957e4849f0,libatspi-f523b4606b3b11a9,libatspi_proxies-989566a3f7b23299,libaccesskit_atspi_common-d2e5d9ce21c9591d,libphf-28e09fac6a6054ae,libphf_shared-a21eb73ccc5d5343,libatspi_common-ef0b4482a86360ed,libaccesskit_consumer-c9f29a4d93186b69,libopen-a526da20fc0ad455,libis_wsl-f38556921c180052,libis_docker-f185f554d42ea035,liboo7-f0ed1eb2660a4984,libpbkdf2-96846f7ee572faa3,libnum_bigint_dig-0581dd0a5f7c10c8,libmd5-6f23d001685d8ed8,libzed_xim-6ecd4336da000dae,libahash-151eda065c99d8de,libconst_random-25b2c42437157270,libhashbrown-487e5642e27501a7,libxim_ctext-9a290382e27237c0,libencoding_rs-0544cff1d670a9b9,libxim_parser-52f14d637a4ceef9,libx11rb-2bef9481cc430fb5,libgethostname-a9ec52e314e051ab,libx11rb_protocol-dd442567455599a2,libwayland_cursor-7c09b8dafc35bed3,libxcursor-a2da99c53f477e2f,libwayland_protocols_wlr-ba9427613a31f4b8,libwayland_protocols_plasma-813905af0a037a33,libfiledescriptor-90625a306e4189e6,libcalloop_wayland_source-3e0b29245755f4dd,libashpd-a4d8e2bde28eb480,libwayland_protocols-7301061df8441a65,libwayland_client-89b638ce345321b0,libwayland_backend-ec78fbe8d4245568,libdowncast_rs-e1eafa6f08715840,libscoped_tls-ee7c31c264797ea7,libzbus-e626a88d946c853b,libhex-affae346adfd49bb,libordered_stream-25f57e5320e2a346,libasync_broadcast-677576ec2222565b,libzbus_names-9988d9170f74b855,libzvariant-f40d701e43d7e2a2,libserde_bytes-eed7b63f0b5287cd,libenumflags2-60993310b4326120,libendi-edfd014b022294df,libzvariant_utils-17fa2fc3e0bdd239,libwinnow-83879eb24b2b9a54,libsyn-c93c177ebe985663,libquote-d5c63890f7a63795,libproc_macro2-218fb03b03c39198}.rlib" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib/{libproc_macro-*,librustc_literal_escaper-*}.rlib" "/home/runner/work/usage-radar/usage-radar/validation/project/target/debug/deps/{libgpui_wgpu-2cf06ceaf36cdb6c,libzed_font_kit-6165bf5648f005c1,libfloat_ord-4fdb805cdba650e4,libdirs-fbe67fc227f82138,libdirs_sys-73eee86d918e219f,libfontconfig_sys-6d434d5311513e51,libfreetype_sys-545962f5451e7b77,libpathfinder_geometry-1e7189b257d6d30f,libpathfinder_simd-a1c11d1884acefc0,liblazy_static-158186fe53750be4,libwgpu-2243017a4760a680,libstatic_assertions-1d82758c140e4746,libwgpu_core-391799910a4d37b7,libwgpu_hal-d03f0fb054668dca,librenderdoc_sys-a85a989fb23a1528,libgpu_allocator-f3099337a1fb19c5,libpresser-2ed36950ab98ef82,libkhronos_egl-380d3b025ae5d9f1,libwayland_sys-c11f6161892a1b7c,libdlib-e732a201114085fd,libwgpu_naga_bridge-982bec865ddb2402,libordered_float-ca1dc78d9c1df943,libgpu_descriptor-f80a098894e2029b,libhashbrown-a4289f1b15cfd806,libfoldhash-edf7bfb43e4d437d,libgpu_descriptor_types-aa5e3c7fa249caa7,libash-35dcb470316e72ca,liblibloading-2f2a5ac632446ac3,libnaga-cbfe3bb3cc17290d,librustc_hash-0e1f97bac300169f,libhexf_parse-57f1ee659fb36467,libunicode_ident-dfd79cd5e44a31cc,libbit_set-66bb071a8eec89ab,libbit_vec-7d105a0c4d0d3639,libcodespan_reporting-00f05f64f146a002,libunicode_width-cdc383b323c9b57b,libspirv-ba792697cf6fc3b9,libhashbrown-b494133f0906e99a,liballocator_api2-b008190ff6627e7b,libfoldhash-a8bbfe378dad238b,libglow-a9c70b57b52d238c,libwgpu_types-dd0f1a9f7a9bde3d,libcosmic_text-165da0423ff01e8f,libunicode_linebreak-221fa82bb4280877,libsys_locale-1bb3c9715a693b66,libswash-4bbf4dd46a4ce07b,libyazi-d6b6096f40de77b3,libskrifa-cf6b06503fd11cf1,libread_fonts-20abaeaf0b89a809,libfont_types-ffca31a61e874475,libzeno-fd64e208779d6ed6,libself_cell-9195e6a8d9181e73,libskrifa-6fc3475201a0fe31,liblinebender_resource_handle-448aaeff25b2a7a7,libharfrust-5c0666f8f2442c26,libread_fonts-7ebf78e49b94a7bd,libcore_maths-b8af6141b9adad4c,liblibm-134c55a73e31b74b,libfont_types-cb0900cff3603008,librangemap-9220834e58600894,libxkbcommon-951743a3f403095a,libxkeysym-5def4f2870de6a62,libas_raw_xcb_connection-40a42fa3feb236dc,libutil-9aca7c7e990fafb0,librust_embed-fffd37d63e43773b,librust_embed_utils-5dabfdf42a3c7001,libwalkdir-4ee801363e333bc3,libsame_file-e1bf5a8daa3f7de4,libsha2-fc223e89e6c6032d,libcpufeatures-174cd9180166f2bc,libdigest-4902f1c311f5bff1,libconst_oid-132a6f7e9672b36e,libcrypto_common-2d3fb90181b5570d,libblock_buffer-4d062bf0a0d26359,libhybrid_array-5bbc7f51d08448ce,libserde_json_lenient-4bebd77856b19c44,libnix-e718fa2bd1a55d21,libshlex-4dd6d360ad0ddcad,libwhich-a49538e86684581b,libhome-7a29da38761ec03d,librustix-1ba8da9b01b6a4f2,liblinux_raw_sys-f65213d6d03a980d,libsmol-97db72954d9a0667,libasync_process-fb43c8cabf27f10f,libasync_signal-220d27ed190ace74,libsignal_hook_registry-d5d89fca81771866,liberrno-1df7ef09efec19f0,libasync_net-2217e026c7522ae6,libasync_io-81b8f0f20b9a6fce,libasync_executor-ffefc613035421e7,libtempfile-158fa10c194d77a2,libtake_until-afe61f03ef899943,libunicase-3594defab610d211,libcommand_fds-f42c42ce2b83720f,libnix-28d6f8718b5df40b,libglobset-5f47acfc890494c6,libbstr-e6816f741e2a8910,libfutures_lite-8d5b55d19109021c,libfastrand-e1a22e9fa4f919f8,libasync_fs-ab5025c873d88334,libblocking-2b8442dae19861bf,libpiper-dd3b12421d60fe16,libasync_lock-961d9f47af984119,libasync_zip-c1bb32f47f61e035,libasync_compression-53531496b350b764,libcompression_codecs-c0c980de6daf63d6,libdeflate64-832ca3351a7cbaa7,libcompression_core-57be9a22a12400b0,libfutures_lite-e2f728279fa4f7dd,libcalloop-d5015eec3b3eff5e,libpolling-b0ddf559e57fdd07,librustix-1539f25826f29651,liblinux_raw_sys-1876c023e34728b1,libreqwest-b9ccc940223081d8,libserde_urlencoded-98d58d09bc62c107,libryu-6bdc3822e67bb16c,libhyper_rustls-d150649f383b2764,libwebpki_roots-83f5b2a16c8e2612,libtokio_rustls-361172ac4bccb014,librustls-8d0620c577b6e880,libwebpki-5aed0ea8369ef310,libring-137948928277b502,libuntrusted-601924861278db30,librustls_pki_types-627a753bc5e84b90,libtower_http-5988b5ab483438f8,libtower-e9a7b0dbd54f9daf,libtower_layer-cb760484088ca808,libhyper_util-59cf3ab99264d3c0,libipnet-a12bf1b63488eace,libtower_service-990190b7646b64cc,libhyper-53627b8b19cc87ef,libwant-2bc0226491ec09d1,libtry_lock-1c2602fa464e3353,libhttparse-68a4500b67749a52,libatomic_waker-acbfc88d72888d6f,libhttp_body_util-5e3c1743b8eaeb06,libhttp_body-e676ed4792f2e5d3,libsync_wrapper-f180c560998da012,libtokio-94718ef180c6bbcc,libsocket2-cd325625aade51d0,libmio-f045942acc5526f1}.rlib" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib/{libtest-*,libgetopts-*,librustc_std_workspace_std-*}.rlib" "/home/runner/work/usage-radar/usage-radar/validation/project/target/debug/deps/{libkeyring-0a3cd7041b333444,libdbus_secret_service-9b2a9b631d853bf8,libhkdf-90cf0d1c756f1455,libhmac-93ac88ce05683b14,libcbc-a071834dc1ec8401,libsha2-4c921c2f38a348a0,libdigest-bce9c331bdad849e,libsubtle-8bde7c6586dea35e,libblock_buffer-96c298a2045dcaa1,libaes-0c43d543cfd3a47f,libcpufeatures-e23d5a6e969d9bf0,libcipher-c1cb7459c1eea51c,libinout-7283c9bf07df279b,libblock_padding-36828137d06c8df1,libcrypto_common-a5bdb136e57da5cc,libgeneric_array-ac29b9acc70fe113,libtypenum-c2c3498bacea3c9b,libnum-7c18e87a21d1882a,libnum_iter-e7750cdabfb060d2,libfastrand-643d373fdfe3ddab,libzeroize-e17ace1c6379eedf,libdbus-a0ddcf7cee674851,liblibdbus_sys-27ffa25d02bc453e,liblinux_keyutils-6ce70c5eb8f5c6d6,libtray_icon-b23b94333162226c,libdirs-31851e4bb241a3d1,libdirs_sys-26165d14858dbf17,liboption_ext-049f0f60631bd407,libmuda-64bb0a837580ac30,liblibxdo-ee77d67b9834aa62,liblibxdo_sys-d60b3b348817b23e,libx11-0c26bf853b738dd4,libdpi-0b4192fa691ba849,libkeyboard_types-fbfcc1a552e82735,liblibappindicator-b07838acb442da2d,libgtk-3f6405b74d38b80f,libfield_offset-bed7dc91fa22fd75,libmemoffset-3add3b60e611963b,libgdk-e1148674e3241011,libpango-8433d2f0e306ebcc,libgdk_pixbuf-ca254149ba09894d,libgio-82f32aad1c3180a2,libcairo-3b3f1449b6f2efb4,libatk-b2539baa1ba29705,liblibappindicator_sys-83ac65acb238b23b,liblibloading-bad1d5c1045f32fc,libgtk_sys-8484a89fa9095fe7,libatk_sys-bb3281728cc590f6,libgdk_sys-5399ba269b927d53,libpango_sys-270fe18502d530a5,libgdk_pixbuf_sys-4223df02bafd815b,libcairo_sys-43bbfab0669353d5,libglib-d6761ded855a93e0,libgio_sys-6e15b6e462a8fb3e,libthiserror-bd892d6aa69cfd83,libgobject_sys-b8b31228aac22e60,libglib_sys-477cdf52ea868dbe,libcrossbeam_channel-f22b7ed51c8ff9c0,libgpui_elements-77792653c909c8fd,libtime-9b5ce7c2b78bef4a,libnum_threads-67e75cbebfa66d81,libpowerfmt-824257374567b54e,libnum_conv-d11a8bc083165766,libderanged-8d0f0169df9e9596,libtime_core-20cec53be60e05a4,libgpui-ed00b8aa674886c9,libasync_channel-be29a0db27346356,libevent_listener_strategy-867fd18e92fd8766,libevent_listener-cd7c917bf4011a9d,libconcurrent_queue-0426dea014563826,libregex-1d107793516406be,libregex_automata-def3ee6a16297a5a,libaho_corasick-bfd8705d31139a2b,libregex_syntax-25290949e6538bec,libspin-2eaff7067d0d9ad3,libparking-a9b4fca02eb13292,libnum_cpus-ce0c14d98cd0e205,liburl-a02696d55a0c820f,libidna-17ca23c2e28280aa,libidna_adapter-64e9b1c821239b9e,libicu_properties-7e4713dd21261067,libicu_properties_data-f175bddb8ee6dddf,libicu_normalizer-51f056825f61ea1f,libicu_normalizer_data-638f82fb53fb4518,libicu_collections-85935f74d4a6cfc3,libutf8_iter-9d50295d66cd89a9,libpotential_utf-9c14780085065427,libicu_provider-c20f4c5bc2e5940c,libicu_locale_core-fe5704534635320a,libtinystr-50d166eee2d25f3a,liblitemap-c7500815ecc796ec,libwriteable-cc519da5f459eac0,libzerovec-802b1af6894e1447,libzerotrie-0fe9ed9684f03a71,libyoke-0acd1e95c7bc6f4d,libzerofrom-ef8558092ab0799f,libform_urlencoded-efce88d9fbfb738e,libpercent_encoding-cdc37637ec12a310,libpin_project-bcf5c90c1958841d,libpollster-8d5bc2e0f36e0feb,libhttp-2598f167c18063bb,libbytes-8dff07cf6be21826,libgpui_shared_string-b0c1b2b599634d7f,libsmol_str-d157c4dd8676ee22,libctor-93d835fa61434b4c,libinventory-b7dcbd4f531947fc,libaccesskit-a2a56aa27147016b,libresvg-247371540fc9a558,libgif-b64cf4dae8f814b6,libzune_jpeg-5d8e029488f48356,libzune_core-8822b721fe9c27af,libusvg-4c6df83e71029283,libbase64-79b21fa8d02d5d68,libunicode_bidi-6414c9cfc74276ff,libunicode_vo-a1d26c9bbc9181bf,libimagesize-b8b8b2f28ce63766,libdata_url-2eb3494d362bb733,libxmlwriter-8bcf5d3408c1d411,librustybuzz-116f0fdd14781713,libunicode_bidi_mirroring-1f7a71b3d1d179f5,libunicode_script-07d09c10f5a02540,libunicode_properties-b923fd9f67900471,libunicode_ccc-de987c11bc47d19a,libsimplecss-a06c20a418a52833,libsvgtypes-0fb646a86524729a,libkurbo-e147dea251a50a11,libsiphasher-1ca879c3d8e51f78,libfontdb-a66aa05cf26487dc,libfontconfig_parser-e8d8d07a9aeba33f,libroxmltree-a2631f43487f2b60,libmemmap2-2f01ffcef37dc2f6,libtinyvec-c29f47e2f97919c7,libtinyvec_macros-8c528612ea250fc1,libttf_parser-bc315fdf453a2c25,libtiny_skia-c5746098e4699dc7,libpng-43d2bd6f53649461,libbitflags-06e277710c5db267,libtiny_skia_path-53b3b0dc527b7b7c,libstrict_num-71f9621bcd07f92c,libfloat_cmp-c9224ea6982d706b,libarrayref-396caae8996b3034,libuuid-8cb1b32c84717e96,libgetrandom-a90e810e6984428e,libsha1_smol-25a859113a92ef2e,libstrum-47b3b1dcd877dc0c,libseahash-8a51c38254dc8158,libraw_window_handle-5deec30d94d43b8c,liblyon-88abfc954e8fcd1e,liblyon_tessellation-3daa7d35840fd55c,libfloat_next_after-339a7cd001644f9b,liblyon_algorithms-fc0b53fb6ea30897,liblyon_path-eeec262bb45f9bef,liblyon_geom-9f223bc7d3f029b6,libetagere-77c3dd7592399234,libsvg_fmt-ba241178edbd1c42,libeuclid-286555741b839a44,libtaffy-f866f452375c1462,libgrid-661913d158bd2ac1,libwaker_fn-4c945ca76b02f53d,libunicode_segmentation-dc77001d596ad4d3,libsum_tree-7e937e155f95b39b,libtracing-38c1ece97e346fbe,libtracing_core-0b840732789a8e21,libonce_cell-bc4c4a1c84c12130,libheapless-9c93a36559aeea8c,libhash32-ef58a9784aa6ad9a,libbyteorder-a0d7f3d239948a8e,libstacksafe-5502a19a96484a40,libstacker-0288d3fca0ec2a51,libpsm-f2097cd552271501,librefineable-f58903a9f12c97d6,libimage-dbd7019c5b3bce5a,libqoi-f16030aa6e9c6793,libmoxcms-9061016d4c22c8a4,libpxfm-94e51cfcc21f7ec7,libimage_webp-c13dbcb3bd49851b,libtiff-4bbecd09132eeb73,libfax-12604eee325badfe,libpng-7300601d4cfe4134,libbitflags-eb81cf994a18921e,libflate2-8f2b48247f9218f8,libfdeflate-8f57c1473257561a,libcrc32fast-576f84219d08d3d7,libexr-72451054d64aef12,libzune_inflate-def77788e991fd78,libbit_field-8dca6600adec7d2c,libpulp-a8699605f8b63957,libnum_complex-af3324b54536713c,liblebe-30ece88574e7d811,libhalf-4423691ca6b20fae,libzune_jpeg-0451421d3e1090ef,libzune_core-67cdb0d08f2b7cfd,libgif-9ef886c4af30c7f0,libcolor_quant-cecdff9f9574107a,libweezl-51ce96be4b8f1579,libbyteorder_lite-b5c52b7dbf53f83e,libravif-a48568c43c323d48,libloop9-08e5fd5ad231c55f,libavif_serialize-5e81f73ba8700a63,libquick_error-259d844d0a7d5c06,librgb-81068c2f933b5097,librav1e-42c2671599e250c3,libprofiling-66a8d9c7b930e063,libav_scenechange-c766b8c58d09b442,liby4m-0dafc65d506b51a6,libaligned-169a85e9d701db51,libas_slice-4b410ef0a0f2c4fd,libstable_deref_trait-9a15af409034c3c9,libav1_grain-6f257c18e18b36e7,libnom-c4cbc0a871cf538c,libnum_rational-57e2e5f5e82a177c,libnum_bigint-782e213ca6396143,libnum_integer-4733e5f052612b89,libmaybe_rayon-95e2c1049faaa2c8,librayon-e9991e2aa9d61d0a,librayon_core-2b219fc54de6c017,libcrossbeam_deque-ff94b137b29af99d,libcrossbeam_epoch-7acf849286e321a9,libcrossbeam_utils-53f22992684371e4,libv_frame-e45abc535faf2146,libarrayvec-0b1ed014d6514756,libaligned_vec-d9fed00340c4e82a,libequator-a0e2503ff03a4d45,libthiserror-4c11c296456de21e,libbitstream_io-9f8670cd9facf684,libimgref-b4d33e2fae3a7e48,libbytemuck-70cc6b989562311f,libgpui_util-e5c1b1bdf3941d39,liblog-fbc23c4ce41ba5c6,libvalue_bag-a4dfc118ec2f7fb1,libvalue_bag_serde1-44e2f5366c70c0e5,libserde_fmt-74e1b477ee2d5367,liberased_serde-23ea371d4de571ed,libtypeid-82182caeb44e6468,libslotmap-f0bec16e2623c853,libitertools-181e7188ce04b24d,libeither-985501da5521e501,libderive_more-1760b9167365fbfb,libscheduler-54d19341dd2805a4,libflume-562325686ec6d12f,libnanorand-8ac37116829cf78e,libgetrandom-6f31d924f8f35b48,libspin-be277fc1c89ab31f,librand-2163ec3d64e8bca1,librand_chacha-1f49241073d4bf17,libppv_lite86-660dabb73f544722,libzerocopy-2058733139df31c3,librand_core-3d43cfb65adfd8e3,libgetrandom-9b402c0365bf8999,libfutures-3d7f5a3d9699aab1,libfutures_executor-0fc9f228c81fd77a,libfutures_util-64715719b8e0318d,libfutures_io-1584382cefd65cf6,libslab-f757c3fe313278ad,libfutures_channel-1f60b7c8d0e161f5,libpin_project_lite-88d2bf9de2082fbc,libfutures_sink-a2cc830605e37bd8,libfutures_task-0b378c28917336f7,libfutures_core-62d766971277d789,libbacktrace-680f045b76f0c80c,libminiz_oxide-5b010a401a160f15,libsimd_adler32-a551f634be464b0a,libobject-afc88cd27c63932d,libaddr2line-f809303536f7a99d,libgimli-273323ffbbf8076a,librustc_demangle-412a80ec8873254e,libasync_task-f34ef5fe272c936a,libweb_time-708b6b864fb405d4,libparking_lot-d4b666a824c4c8e1,libparking_lot_core-e46c89e6b7dd82b5,liblibc-6070cb4fe7e548a7,libcfg_if-7ed6a9a25372546a,libsmallvec-bcffbe765486db42,liblock_api-48ced110d2e7a75b,libscopeguard-0a829fbeeb4df068,libchrono-4a2e0a03d14b5ac8,libiana_time_zone-ffe8b73fb91eef49,libnum_traits-7afd832006d4dd48,libschemars-9c3ff53ed05c8ba2,libdyn_clone-2dd139a8784303d9,libserde-f782a75fef45d351,libref_cast-b718e867b11dac5a,libserde_json-0017908fbe063b81,libmemchr-ecdd186ea8530bb8,libitoa-98af5ee835488744,libzmij-9121ac90252e7225,libcollections-a261ae910fbecbc3,librustc_hash-6d0956a0b96491bb,libindexmap-a2a0bd921b604e27,libequivalent-73f7ae47682c17fb,libserde_core-e771dd4c4a519e73,libhashbrown-3fc469c7ee5a9412,libanyhow-5ee4abcbb768feed}.rlib" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib/{libstd-*,libpanic_unwind-*,libobject-*,libmemchr-*,libaddr2line-*,libgimli-*,libcfg_if-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libminiz_oxide-*,libadler2-*,libunwind-*,liblibc-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "-Wl,-Bdynamic" "-lxcb" "-lfontconfig" "-lfreetype" "-lfreetype" "-ldl" "-lxkbcommon" "-lxkbcommon-x11" "-ldbus-1" "-lxdo" "-ldl" "-lgtk-3" "-lgdk-3" "-lz" "-lpangocairo-1.0" "-lpango-1.0" "-lharfbuzz" "-latk-1.0" "-lcairo-gobject" "-lcairo" "-lgdk_pixbuf-2.0" "-lgio-2.0" "-lgobject-2.0" "-lglib-2.0" "-latk-1.0" "-lgobject-2.0" "-lglib-2.0" "-lgdk-3" "-lz" "-lpangocairo-1.0" "-lpango-1.0" "-lharfbuzz" "-lgdk_pixbuf-2.0" "-lcairo-gobject" "-lcairo" "-lgobject-2.0" "-lglib-2.0" "-lpango-1.0" "-lgobject-2.0" "-lglib-2.0" "-lharfbuzz" "-lgdk_pixbuf-2.0" "-lgobject-2.0" "-lglib-2.0" "-lcairo-gobject" "-lcairo" "-lgobject-2.0" "-lglib-2.0" "-lgobject-2.0" "-lgio-2.0" "-lgobject-2.0" "-lglib-2.0" "-lgobject-2.0" "-lglib-2.0" "-lgobject-2.0" "-lglib-2.0" "-lgcc_s" "-lutil" "-lrt" "-lpthread" "-lm" "-ldl" "-lc" "-L" "/home/runner/work/usage-radar/usage-radar/validation/project/target/debug/deps/rustcFnjzIg/raw-dylibs" "-B<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld" "-fuse-ld=lld" "-Wl,--eh-frame-hdr" "-Wl,-z,noexecstack" "-L" "/home/runner/work/usage-radar/usage-radar/validation/project/target/debug/build/psm-3d973ee81e22db58/out" "-L" "/home/runner/work/usage-radar/usage-radar/validation/project/target/debug/build/ring-3ee92dabc7bbd207/out" "-L" "/usr/lib/x86_64-linux-gnu" "-L" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib" "-o" "/home/runner/work/usage-radar/usage-radar/validation/project/target/debug/deps/usage_radar-e099710847d3d148" "-Wl,--gc-sections" "-pie" "-Wl,-z,relro,-z,now" "-Wl,--strip-debug" "-nodefaultlibs"
+  [1m[94m= [0m[1mnote[0m: some arguments are omitted. use `--verbose` to show all linker arguments
+  [1m[94m= [0m[1mnote[0m: rust-lld: error: unable to find library -lxdo
+          collect2: error: ld returned 1 exit status
+          
 
-[1m[91merror[E0599][0m[1m: no method named `background_spawn` found for mutable reference `&mut AsyncApp` in the current scope[0m
-  [1m[94m--> [0msrc/app/mod.rs:85:16
-   [1m[94m|[0m
-[1m[94m85[0m [1m[94m|[0m             cx.background_spawn(async {
-   [1m[94m|[0m             [1m[94m---[0m[1m[91m^^^^^^^^^^^^^^^^[0m [1m[91mmethod not found in `&mut AsyncApp`[0m
-   [1m[94m|[0m
-   [1m[94m= [0m[1mhelp[0m: items from traits can only be used if the trait is in scope
-[1m[96mhelp[0m: trait `AppContext` which provides `background_spawn` is implemented but not in scope; perhaps you want to import it
-   [1m[94m|[0m
-[1m[94m 1[0m [92m+ use gpui::AppContext;[0m
-   [1m[94m|[0m
-
-[1m[91merror[E0599][0m[1m: no method named `new` found for mutable reference `&mut gpui::App` in the current scope[0m
-   [1m[94m--> [0msrc/app/mod.rs:223:34
-    [1m[94m|[0m
-[1m[94m223[0m [1m[94m|[0m             move |window, cx| cx.new(|cx| PanelView::new(app_entity.clone(), window, cx)),
-    [1m[94m|[0m                                  [1m[91m^^^[0m [1m[91mmethod not found in `&mut gpui::App`[0m
-    [1m[94m|[0m
-    [1m[94m= [0m[1mhelp[0m: items from traits can only be used if the trait is in scope
-[1m[96mhelp[0m: trait `AppContext` which provides `new` is implemented but not in scope; perhaps you want to import it
-    [1m[94m|[0m
-[1m[94m  1[0m [92m+ use gpui::AppContext;[0m
-    [1m[94m|[0m
-
-[1m[91merror[E0599][0m[1m: no method named `background_spawn` found for mutable reference `&mut AsyncApp` in the current scope[0m
-   [1m[94m--> [0msrc/app/mod.rs:417:30
-    [1m[94m|[0m
-[1m[94m416[0m [1m[94m|[0m                           let result = cx
-    [1m[94m|[0m [1m[94m ______________________________________-[0m
-[1m[94m417[0m [1m[94m|[0m [1m[94m|[0m                             .background_spawn(async move {
-    [1m[94m|[0m [1m[94m|[0m                             [1m[94m-[0m[1m[91m^^^^^^^^^^^^^^^^[0m [1m[91mmethod not found in `&mut AsyncApp`[0m
-    [1m[94m|[0m [1m[94m|_____________________________|[0m
-    [1m[94m|[0m
-    [1m[94m|[0m
-    [1m[94m= [0m[1mhelp[0m: items from traits can only be used if the trait is in scope
-[1m[96mhelp[0m: trait `AppContext` which provides `background_spawn` is implemented but not in scope; perhaps you want to import it
-    [1m[94m|[0m
-[1m[94m  1[0m [92m+ use gpui::AppContext;[0m
-    [1m[94m|[0m
-
-[1m[91merror[E0599][0m[1m: no method named `background_spawn` found for mutable reference `&mut AsyncApp` in the current scope[0m
-   [1m[94m--> [0msrc/app/mod.rs:529:18
-    [1m[94m|[0m
-[1m[94m528[0m [1m[94m|[0m               let result = cx
-    [1m[94m|[0m [1m[94m __________________________-[0m
-[1m[94m529[0m [1m[94m|[0m [1m[94m|[0m                 .background_spawn(async move {
-    [1m[94m|[0m [1m[94m|[0m                 [1m[94m-[0m[1m[91m^^^^^^^^^^^^^^^^[0m [1m[91mmethod not found in `&mut AsyncApp`[0m
-    [1m[94m|[0m [1m[94m|_________________|[0m
-    [1m[94m|[0m
-    [1m[94m|[0m
-    [1m[94m= [0m[1mhelp[0m: items from traits can only be used if the trait is in scope
-[1m[96mhelp[0m: trait `AppContext` which provides `background_spawn` is implemented but not in scope; perhaps you want to import it
-    [1m[94m|[0m
-[1m[94m  1[0m [92m+ use gpui::AppContext;[0m
-    [1m[94m|[0m
-
-[1m[91merror[E0599][0m[1m: no method named `background_spawn` found for mutable reference `&mut AsyncApp` in the current scope[0m
-   [1m[94m--> [0msrc/app/mod.rs:561:26
-    [1m[94m|[0m
-[1m[94m560[0m [1m[94m|[0m                       let result = cx
-    [1m[94m|[0m [1m[94m __________________________________-[0m
-[1m[94m561[0m [1m[94m|[0m [1m[94m|[0m                         .background_spawn(async move {
-    [1m[94m|[0m [1m[94m|[0m                         [1m[94m-[0m[1m[91m^^^^^^^^^^^^^^^^[0m [1m[91mmethod not found in `&mut AsyncApp`[0m
-    [1m[94m|[0m [1m[94m|_________________________|[0m
-    [1m[94m|[0m
-    [1m[94m|[0m
-    [1m[94m= [0m[1mhelp[0m: items from traits can only be used if the trait is in scope
-[1m[96mhelp[0m: trait `AppContext` which provides `background_spawn` is implemented but not in scope; perhaps you want to import it
-    [1m[94m|[0m
-[1m[94m  1[0m [92m+ use gpui::AppContext;[0m
-    [1m[94m|[0m
-
-[1m[91merror[E0599][0m[1m: no method named `background_spawn` found for mutable reference `&mut AsyncApp` in the current scope[0m
-   [1m[94m--> [0msrc/app/mod.rs:683:18
-    [1m[94m|[0m
-[1m[94m682[0m [1m[94m|[0m               let outcomes = cx
-    [1m[94m|[0m [1m[94m ____________________________-[0m
-[1m[94m683[0m [1m[94m|[0m [1m[94m|[0m                 .background_spawn(async move {
-    [1m[94m|[0m [1m[94m|[0m                 [1m[94m-[0m[1m[91m^^^^^^^^^^^^^^^^[0m [1m[91mmethod not found in `&mut AsyncApp`[0m
-    [1m[94m|[0m [1m[94m|_________________|[0m
-    [1m[94m|[0m
-    [1m[94m|[0m
-    [1m[94m= [0m[1mhelp[0m: items from traits can only be used if the trait is in scope
-[1m[96mhelp[0m: trait `AppContext` which provides `background_spawn` is implemented but not in scope; perhaps you want to import it
-    [1m[94m|[0m
-[1m[94m  1[0m [92m+ use gpui::AppContext;[0m
-    [1m[94m|[0m
-
-[1m[91merror[E0599][0m[1m: no method named `new` found for mutable reference `&mut gpui::App` in the current scope[0m
-  [1m[94m--> [0msrc/main.rs:26:26
-   [1m[94m|[0m
-[1m[94m26[0m [1m[94m|[0m             let app = cx.new(UsageRadarApp::new);
-   [1m[94m|[0m                          [1m[91m^^^[0m [1m[91mmethod not found in `&mut gpui::App`[0m
-   [1m[94m|[0m
-   [1m[94m= [0m[1mhelp[0m: items from traits can only be used if the trait is in scope
-[1m[96mhelp[0m: trait `AppContext` which provides `new` is implemented but not in scope; perhaps you want to import it
-   [1m[94m|[0m
-[1m[94m 6[0m [92m+ use gpui::AppContext;[0m
-   [1m[94m|[0m
-
-[1mFor more information about this error, try `rustc --explain E0599`.[0m
-[1m[91merror[0m: could not compile `usage-radar` (bin "usage-radar" test) due to 10 previous errors
+[1m[91merror[0m: could not compile `usage-radar` (bin "usage-radar" test) due to 1 previous error

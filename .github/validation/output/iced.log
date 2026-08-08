@@ -1,0 +1,5 @@
+grep: README.md: No such file or directory
+grep: AGENTS.md: No such file or directory
+grep: MVP.md: No such file or directory
+grep: SPEC.md: No such file or directory
+grep: .github: No such file or directory
