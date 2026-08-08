@@ -1,1 +1,1 @@
-probe=gpui-compiler-pass-2
+probe=gpui-compiler-pass-3
