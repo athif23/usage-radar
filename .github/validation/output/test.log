@@ -1,0 +1,605 @@
+[1m[92m   Compiling[0m serde_core v1.0.229
+[1m[92m   Compiling[0m libc v0.2.189
+[1m[92m   Compiling[0m typeid v1.0.3
+[1m[92m   Compiling[0m pin-project-lite v0.2.17
+[1m[92m   Compiling[0m futures-core v0.3.33
+[1m[92m   Compiling[0m smallvec v1.15.2
+[1m[92m   Compiling[0m libm v0.2.16
+[1m[92m   Compiling[0m futures-io v0.3.33
+[1m[92m   Compiling[0m slab v0.4.12
+[1m[92m   Compiling[0m crossbeam-utils v0.8.22
+[1m[92m   Compiling[0m bytemuck v1.25.2
+[1m[92m   Compiling[0m num-traits v0.2.19
+[1m[92m   Compiling[0m futures-sink v0.3.33
+[1m[92m   Compiling[0m futures-channel v0.3.33
+[1m[92m   Compiling[0m linux-raw-sys v0.12.1
+[1m[92m   Compiling[0m parking v2.2.1
+[1m[92m   Compiling[0m futures-task v0.3.33
+[1m[92m   Compiling[0m fastrand v2.5.0
+[1m[92m   Compiling[0m futures-util v0.3.33
+[1m[92m   Compiling[0m stable_deref_trait v1.2.1
+[1m[92m   Compiling[0m arrayvec v0.7.8
+[1m[92m   Compiling[0m futures-lite v2.6.1
+[1m[92m   Compiling[0m bitflags v2.13.1
+[1m[92m   Compiling[0m erased-serde v0.4.10
+[1m[92m   Compiling[0m serde_fmt v1.1.0
+[1m[92m   Compiling[0m serde v1.0.229
+[1m[92m   Compiling[0m rustix v1.1.4
+[1m[92m   Compiling[0m value-bag-serde1 v1.13.2
+[1m[92m   Compiling[0m value-bag v1.13.2
+[1m[92m   Compiling[0m log v0.4.33
+[1m[92m   Compiling[0m simd-adler32 v0.3.10
+[1m[92m   Compiling[0m zerocopy v0.8.56
+[1m[92m   Compiling[0m event-listener v5.4.2
+[1m[92m   Compiling[0m concurrent-queue v2.5.0
+[1m[92m   Compiling[0m libloading v0.8.9
+[1m[92m   Compiling[0m event-listener-strategy v0.5.4
+[1m[92m   Compiling[0m adler2 v2.0.1
+[1m[92m   Compiling[0m miniz_oxide v0.8.9
+[1m[92m   Compiling[0m thiserror v2.0.20
+[1m[92m   Compiling[0m zerofrom v0.1.8
+[1m[92m   Compiling[0m async-task v4.7.1
+[1m[92m   Compiling[0m yoke v0.8.3
+[1m[92m   Compiling[0m glib-sys v0.18.1
+[1m[92m   Compiling[0m futures-executor v0.3.33
+[1m[92m   Compiling[0m tracing-core v0.1.36
+[1m[92m   Compiling[0m atomic-waker v1.1.2
+[1m[92m   Compiling[0m async-channel v2.5.0
+[1m[92m   Compiling[0m tracing v0.1.44
+[1m[92m   Compiling[0m dlib v0.5.3
+[1m[92m   Compiling[0m itoa v1.0.18
+[1m[92m   Compiling[0m thiserror v1.0.69
+[1m[92m   Compiling[0m zerovec v0.11.6
+[1m[92m   Compiling[0m gobject-sys v0.18.0
+[1m[92m   Compiling[0m generic-array v0.14.7
+[1m[92m   Compiling[0m crc32fast v1.5.0
+[1m[92m   Compiling[0m getrandom v0.4.3
+[1m[92m   Compiling[0m indexmap v2.14.0
+[1m[92m   Compiling[0m polling v3.11.0
+[1m[92m   Compiling[0m num-integer v0.1.46
+[1m[92m   Compiling[0m flate2 v1.1.9
+[1m[92m   Compiling[0m zeroize v1.9.0
+[1m[92m   Compiling[0m wayland-sys v0.31.11
+[1m[92m   Compiling[0m scopeguard v1.2.0
+[1m[92m   Compiling[0m bytes v1.12.1
+[1m[92m   Compiling[0m sha1_smol v1.0.1
+[1m[92m   Compiling[0m lock_api v0.4.14
+[1m[92m   Compiling[0m uuid v1.24.0
+[1m[92m   Compiling[0m gio-sys v0.18.1
+[1m[92m   Compiling[0m async-io v2.6.0
+[1m[92m   Compiling[0m crossbeam-epoch v0.9.20
+[1m[92m   Compiling[0m tinystr v0.8.3
+[1m[92m   Compiling[0m num-bigint v0.4.8
+[1m[92m   Compiling[0m piper v0.2.5
+[1m[92m   Compiling[0m errno v0.3.14
+[1m[92m   Compiling[0m syn v2.0.119
+[1m[92m   Compiling[0m litemap v0.8.2
+[1m[92m   Compiling[0m either v1.17.0
+[1m[92m   Compiling[0m writeable v0.6.3
+[1m[92m   Compiling[0m subtle v2.6.1
+[1m[92m   Compiling[0m icu_locale_core v2.2.0
+[1m[92m   Compiling[0m signal-hook-registry v1.4.8
+[1m[92m   Compiling[0m num-rational v0.4.2
+[1m[92m   Compiling[0m blocking v1.6.2
+[1m[92m   Compiling[0m crossbeam-deque v0.8.7
+[1m[92m   Compiling[0m half v2.7.1
+[1m[92m   Compiling[0m zerotrie v0.2.4
+[1m[92m   Compiling[0m crypto-common v0.1.7
+[1m[92m   Compiling[0m potential_utf v0.1.5
+[1m[92m   Compiling[0m enumflags2 v0.7.12
+[1m[92m   Compiling[0m async-lock v3.4.2
+[1m[92m   Compiling[0m serde_bytes v0.11.19
+[1m[92m   Compiling[0m getrandom v0.2.17
+[1m[92m   Compiling[0m core_maths v0.1.1
+[1m[92m   Compiling[0m utf8_iter v1.0.4
+[1m[92m   Compiling[0m foldhash v0.2.0
+[1m[92m   Compiling[0m allocator-api2 v0.2.21
+[1m[92m   Compiling[0m icu_collections v2.2.0
+[1m[92m   Compiling[0m icu_provider v2.2.0
+[1m[92m   Compiling[0m hashbrown v0.16.1
+[1m[92m   Compiling[0m rayon-core v1.13.0
+[1m[92m   Compiling[0m async-signal v0.2.14
+[1m[92m   Compiling[0m zvariant_utils v3.5.0
+[1m[92m   Compiling[0m zvariant v5.13.1
+[1m[92m   Compiling[0m percent-encoding v2.3.2
+[1m[92m   Compiling[0m profiling v1.0.18
+[1m[92m   Compiling[0m equator v0.4.2
+[1m[92m   Compiling[0m async-process v2.5.0
+[1m[92m   Compiling[0m parking_lot_core v0.9.12
+[1m[92m   Compiling[0m anyhow v1.0.104
+[1m[92m   Compiling[0m icu_properties_data v2.2.0
+[1m[92m   Compiling[0m icu_normalizer_data v2.2.0
+[1m[92m   Compiling[0m http v1.5.0
+[1m[92m   Compiling[0m async-executor v1.14.0
+[1m[92m   Compiling[0m num-complex v0.4.6
+[1m[92m   Compiling[0m static_assertions v1.1.0
+[1m[92m   Compiling[0m icu_normalizer v2.2.0
+[1m[92m   Compiling[0m icu_properties v2.2.0
+[1m[92m   Compiling[0m parking_lot v0.12.5
+[1m[92m   Compiling[0m aligned-vec v0.6.4
+[1m[92m   Compiling[0m getrandom v0.3.4
+[1m[92m   Compiling[0m rayon v1.12.0
+[1m[92m   Compiling[0m block-buffer v0.10.4
+[1m[92m   Compiling[0m fdeflate v0.3.7
+[1m[92m   Compiling[0m zbus_names v4.3.4
+[1m[92m   Compiling[0m euclid v0.22.14
+[1m[92m   Compiling[0m scoped-tls v1.0.1
+[1m[92m   Compiling[0m raw-window-handle v0.6.2
+[1m[92m   Compiling[0m downcast-rs v1.2.1
+[1m[92m   Compiling[0m regex-syntax v0.8.11
+[1m[92m   Compiling[0m wayland-backend v0.3.16
+[1m[92m   Compiling[0m idna_adapter v1.2.2
+[1m[92m   Compiling[0m digest v0.10.7
+[1m[92m   Compiling[0m rand_core v0.9.5
+[1m[92m   Compiling[0m v_frame v0.3.9
+[1m[92m   Compiling[0m slotmap v1.1.1
+[1m[92m   Compiling[0m glib v0.18.5
+[1m[92m   Compiling[0m zmij v1.0.23
+[1m[92m   Compiling[0m form_urlencoded v1.2.2
+[1m[92m   Compiling[0m ttf-parser v0.25.1
+[1m[92m   Compiling[0m ppv-lite86 v0.2.21
+[1m[92m   Compiling[0m regex-automata v0.4.18
+[1m[92m   Compiling[0m async-broadcast v0.7.2
+[1m[92m   Compiling[0m as-slice v0.2.1
+[1m[92m   Compiling[0m memmap2 v0.9.11
+[1m[92m   Compiling[0m ordered-stream v0.2.0
+[1m[92m   Compiling[0m weezl v0.1.12
+[1m[92m   Compiling[0m option-ext v0.2.0
+[1m[92m   Compiling[0m bit-vec v0.9.1
+[1m[92m   Compiling[0m unicode-width v0.2.2
+[1m[92m   Compiling[0m quick-error v2.0.1
+[1m[92m   Compiling[0m base64 v0.22.1
+[1m[92m   Compiling[0m roxmltree v0.20.0
+[1m[92m   Compiling[0m hex v0.4.3
+[1m[92m   Compiling[0m tinyvec_macros v0.1.1
+[1m[92m   Compiling[0m float-cmp v0.9.0
+[1m[92m   Compiling[0m strict-num v0.1.1
+[1m[92m   Compiling[0m tinyvec v1.12.0
+[1m[92m   Compiling[0m zbus v5.18.0
+[1m[92m   Compiling[0m fontconfig-parser v0.5.8
+[1m[92m   Compiling[0m codespan-reporting v0.13.1
+[1m[92m   Compiling[0m bit-set v0.9.1
+[1m[92m   Compiling[0m pin-project v1.1.13
+[1m[92m   Compiling[0m aligned v0.4.3
+[1m[92m   Compiling[0m rand_chacha v0.9.0
+[1m[92m   Compiling[0m serde_json v1.0.151
+[1m[92m   Compiling[0m wayland-client v0.31.15
+[1m[92m   Compiling[0m idna v1.1.0
+[1m[92m   Compiling[0m pango-sys v0.18.0
+[1m[92m   Compiling[0m cairo-sys-rs v0.18.2
+[1m[92m   Compiling[0m gdk-pixbuf-sys v0.18.0
+[1m[92m   Compiling[0m lyon_geom v1.0.19
+[1m[92m   Compiling[0m itertools v0.14.0
+[1m[92m   Compiling[0m block-padding v0.3.3
+[1m[92m   Compiling[0m spirv v0.4.0+sdk-1.4.341.0
+[1m[92m   Compiling[0m nom v8.0.0
+[1m[92m   Compiling[0m no_std_io2 v0.9.4
+[1m[92m   Compiling[0m y4m v0.8.0
+[1m[92m   Compiling[0m color_quant v1.1.0
+[1m[92m   Compiling[0m unicode-script v0.5.8
+[1m[92m   Compiling[0m hexf-parse v0.2.1
+[1m[92m   Compiling[0m arrayref v0.3.9
+[1m[92m   Compiling[0m rustc-hash v1.1.0
+[1m[92m   Compiling[0m byteorder v1.5.0
+[1m[92m   Compiling[0m foldhash v0.1.5
+[1m[92m   Compiling[0m bitflags v1.3.2
+[1m[92m   Compiling[0m png v0.17.16
+[1m[92m   Compiling[0m hashbrown v0.15.5
+[1m[92m   Compiling[0m naga v29.0.4
+[1m[92m   Compiling[0m av1-grain v0.2.5
+[1m[92m   Compiling[0m tiny-skia-path v0.11.4
+[1m[92m   Compiling[0m av-scenechange v0.14.1
+[1m[92m   Compiling[0m ref-cast v1.0.26
+[1m[92m   Compiling[0m bitstream-io v4.10.0
+[1m[92m   Compiling[0m inout v0.1.4
+[1m[92m   Compiling[0m lyon_path v1.0.19
+[1m[92m   Compiling[0m url v2.5.8
+[1m[92m   Compiling[0m rand v0.9.5
+[1m[92m   Compiling[0m fontdb v0.23.0
+[1m[92m   Compiling[0m ash v0.38.0+1.3.281
+[1m[92m   Compiling[0m maybe-rayon v0.1.1
+[1m[92m   Compiling[0m zbus_xml v5.2.1
+[1m[92m   Compiling[0m wgpu-types v29.0.4
+[1m[92m   Compiling[0m accesskit v0.24.1
+[1m[92m   Compiling[0m futures v0.3.33
+[1m[92m   Compiling[0m gpu-descriptor-types v0.2.0
+[1m[92m   Compiling[0m raw-cpuid v11.6.0
+[1m[92m   Compiling[0m kurbo v0.11.3
+[1m[92m   Compiling[0m socket2 v0.6.5
+[1m[92m   Compiling[0m mio v1.2.2
+[1m[92m   Compiling[0m rgb v0.8.53
+[1m[92m   Compiling[0m new_debug_unreachable v1.0.6
+[1m[92m   Compiling[0m byteorder-lite v0.1.0
+[1m[92m   Compiling[0m pulp-wasm-simd-flag v0.1.1
+[1m[92m   Compiling[0m gimli v0.32.3
+[1m[92m   Compiling[0m imgref v1.12.2
+[1m[92m   Compiling[0m presser v0.3.1
+[1m[92m   Compiling[0m unicode-ccc v0.4.0
+[1m[92m   Compiling[0m zune-core v0.5.3
+[1m[92m   Compiling[0m rustc-hash v2.1.3
+[1m[92m   Compiling[0m unicode-properties v0.1.4
+[1m[92m   Compiling[0m reborrow v0.5.5
+[1m[92m   Compiling[0m dyn-clone v1.0.20
+[1m[92m   Compiling[0m unicode-bidi-mirroring v0.4.0
+[1m[92m   Compiling[0m unicode-bidi v0.3.18
+[1m[92m   Compiling[0m rustybuzz v0.20.1
+[1m[92m   Compiling[0m addr2line v0.25.1
+[1m[92m   Compiling[0m schemars v1.2.2
+[1m[92m   Compiling[0m pulp v0.22.3
+[1m[92m   Compiling[0m wgpu-naga-bridge v29.0.4
+[1m[92m   Compiling[0m rav1e v0.8.1
+[1m[92m   Compiling[0m gpu-allocator v0.28.0
+[1m[92m   Compiling[0m zune-jpeg v0.5.15
+[1m[92m   Compiling[0m loop9 v0.1.5
+[1m[92m   Compiling[0m image-webp v0.2.4
+[1m[92m   Compiling[0m tokio v1.53.1
+[1m[92m   Compiling[0m svgtypes v0.15.3
+[1m[92m   Compiling[0m gpu-descriptor v0.3.2
+[1m[92m   Compiling[0m zbus-lockstep v0.5.2
+[1m[92m   Compiling[0m psm v0.1.32
+[1m[92m   Compiling[0m cipher v0.4.4
+[1m[92m   Compiling[0m pathfinder_simd v0.5.6
+[1m[92m   Compiling[0m khronos-egl v6.0.0
+[1m[92m   Compiling[0m gio v0.18.4
+[1m[92m   Compiling[0m object v0.37.3
+[1m[92m   Compiling[0m hash32 v0.3.1
+[1m[92m   Compiling[0m gdk-sys v0.18.2
+[1m[92m   Compiling[0m hmac v0.12.1
+[1m[92m   Compiling[0m atk-sys v0.18.2
+[1m[92m   Compiling[0m nanorand v0.7.0
+[1m[92m   Compiling[0m spin v0.9.9
+[1m[92m   Compiling[0m num-iter v0.1.46
+[1m[92m   Compiling[0m simplecss v0.2.2
+[1m[92m   Compiling[0m zune-inflate v0.2.54
+[1m[92m   Compiling[0m avif-serialize v0.8.9
+[1m[92m   Compiling[0m ordered-float v5.3.0
+[1m[92m   Compiling[0m font-types v0.11.3
+[1m[92m   Compiling[0m font-types v0.12.2
+[1m[92m   Compiling[0m smol_str v0.3.6
+[1m[92m   Compiling[0m cpufeatures v0.2.17
+[1m[92m   Compiling[0m lebe v0.5.3
+[1m[92m   Compiling[0m pico-args v0.5.0
+[1m[92m   Compiling[0m bit_field v0.10.3
+[1m[92m   Compiling[0m float_next_after v1.0.0
+[1m[92m   Compiling[0m renderdoc-sys v1.1.0
+[1m[92m   Compiling[0m iana-time-zone v0.1.65
+[1m[92m   Compiling[0m waker-fn v1.2.0
+[1m[92m   Compiling[0m unicode-vo v0.1.0
+[1m[92m   Compiling[0m pxfm v0.1.30
+[1m[92m   Compiling[0m data-url v0.3.2
+[1m[92m   Compiling[0m xmlwriter v0.1.0
+[1m[92m   Compiling[0m rustc-demangle v0.1.28
+[1m[92m   Compiling[0m fax v0.2.7
+[1m[92m   Compiling[0m imagesize v0.13.0
+[1m[92m   Compiling[0m zune-core v0.4.12
+[1m[92m   Compiling[0m glow v0.17.0
+[1m[92m   Compiling[0m usvg v0.45.1
+[1m[92m   Compiling[0m moxcms v0.8.1
+[1m[92m   Compiling[0m wgpu-hal v29.0.4
+[1m[92m   Compiling[0m zune-jpeg v0.4.21
+[1m[92m   Compiling[0m tiff v0.11.3
+[1m[92m   Compiling[0m backtrace v0.3.76
+[1m[92m   Compiling[0m chrono v0.4.45
+[1m[92m   Compiling[0m exr v1.74.2
+[1m[92m   Compiling[0m lyon_tessellation v1.0.20
+[1m[92m   Compiling[0m read-fonts v0.41.0
+[1m[92m   Compiling[0m read-fonts v0.37.0
+[1m[92m   Compiling[0m ravif v0.13.0
+[1m[92m   Compiling[0m flume v0.11.1
+[1m[92m   Compiling[0m heapless v0.9.3
+[1m[92m   Compiling[0m pathfinder_geometry v0.5.1
+[1m[92m   Compiling[0m atspi-common v0.13.0
+[1m[92m   Compiling[0m stacker v0.1.25
+[1m[92m   Compiling[0m gpui_collections v0.2.2 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
+[1m[92m   Compiling[0m lyon_algorithms v1.0.20
+[1m[92m   Compiling[0m tiny-skia v0.11.4
+[1m[92m   Compiling[0m gif v0.13.3
+[1m[92m   Compiling[0m gif v0.14.2
+[1m[92m   Compiling[0m wayland-protocols v0.32.13
+[1m[92m   Compiling[0m regex v1.13.1
+[1m[92m   Compiling[0m png v0.18.1
+[1m[92m   Compiling[0m http-body v1.1.0
+[1m[92m   Compiling[0m gpui_ce_util v0.2.2 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
+[1m[92m   Compiling[0m rustls-pki-types v1.15.1
+[1m[92m   Compiling[0m qoi v0.4.1
+[1m[92m   Compiling[0m crossbeam-queue v0.3.13
+[1m[92m   Compiling[0m ryu v1.0.23
+[1m[92m   Compiling[0m compression-core v0.4.32
+[1m[92m   Compiling[0m deflate64 v0.1.12
+[1m[92m   Compiling[0m pollster v0.2.5
+[1m[92m   Compiling[0m as-raw-xcb-connection v1.0.1
+[1m[92m   Compiling[0m fixedbitset v0.5.7
+[1m[92m   Compiling[0m web-time v1.1.0
+[1m[92m   Compiling[0m link-section v0.19.2
+[1m[92m   Compiling[0m xcursor v0.3.11
+[1m[92m   Compiling[0m grid v1.0.1
+[1m[92m   Compiling[0m untrusted v0.9.0
+[1m[92m   Compiling[0m atomic v0.5.3
+[1m[92m   Compiling[0m svg_fmt v0.4.5
+[1m[92m   Compiling[0m postage v0.5.0
+[1m[92m   Compiling[0m taffy v0.10.1
+[1m[92m   Compiling[0m etagere v0.2.15
+[1m[92m   Compiling[0m ring v0.17.14
+[1m[92m   Compiling[0m ctor v1.0.12
+[1m[92m   Compiling[0m futures-concurrency v7.7.1
+[1m[92m   Compiling[0m compression-codecs v0.4.38
+[1m[92m   Compiling[0m gpui_scheduler v0.2.2 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
+[1m[92m   Compiling[0m gpui_refineable v0.2.2 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
+[1m[92m   Compiling[0m stacksafe v1.0.3
+[1m[92m   Compiling[0m strum v0.27.2
+[1m[92m   Compiling[0m image v0.25.10
+[1m[92m   Compiling[0m resvg v0.45.1
+[1m[92m   Compiling[0m lyon v1.0.19
+[1m[92m   Compiling[0m skrifa v0.44.0
+[1m[92m   Compiling[0m gpui_sum_tree v0.2.2 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
+[1m[92m   Compiling[0m memoffset v0.9.1
+[1m[92m   Compiling[0m derive_more v2.1.1
+[1m[92m   Compiling[0m pango v0.18.3
+[1m[92m   Compiling[0m gdk-pixbuf v0.18.5
+[1m[92m   Compiling[0m wgpu-core-deps-windows-linux-android v29.0.4
+[1m[92m   Compiling[0m gpui_shared_string v0.1.0 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
+[1m[92m   Compiling[0m aes v0.8.4
+[1m[92m   Compiling[0m sha2 v0.10.9
+[1m[92m   Compiling[0m num v0.4.3
+[1m[92m   Compiling[0m gtk-sys v0.18.2
+[1m[92m   Compiling[0m hkdf v0.12.4
+[1m[92m   Compiling[0m cbc v0.1.2
+[1m[92m   Compiling[0m globset v0.4.20
+[1m[92m   Compiling[0m cairo-rs v0.18.5
+[1m[92m   Compiling[0m dirs-sys v0.4.1
+[1m[92m   Compiling[0m dirs-sys v0.5.0
+[1m[92m   Compiling[0m async-fs v2.2.0
+[1m[92m   Compiling[0m phf_shared v0.13.1
+[1m[92m   Compiling[0m spin v0.10.1
+[1m[92m   Compiling[0m gethostname v1.1.0
+[1m[92m   Compiling[0m num_cpus v1.17.0
+[1m[92m   Compiling[0m inventory v0.3.24
+[1m[92m   Compiling[0m zeno v0.3.3
+[1m[92m   Compiling[0m try-lock v0.2.5
+[1m[92m   Compiling[0m seahash v4.1.0
+[1m[92m   Compiling[0m pollster v0.4.0
+[1m[92m   Compiling[0m yazi v0.2.1
+[1m[92m   Compiling[0m x11rb-protocol v0.13.2
+[1m[92m   Compiling[0m linux-raw-sys v0.4.15
+[1m[92m   Compiling[0m tower-service v0.3.3
+[1m[92m   Compiling[0m swash v0.2.10
+[1m[92m   Compiling[0m rustix v0.38.44
+[1m[92m   Compiling[0m gpui v0.2.2 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
+[1m[92m   Compiling[0m want v0.3.1
+[1m[92m   Compiling[0m phf v0.13.1
+[1m[92m   Compiling[0m dirs v6.0.0
+[1m[92m   Compiling[0m gdk v0.18.2
+[1m[92m   Compiling[0m dirs v5.0.1
+[1m[92m   Compiling[0m rust-embed-utils v8.12.0
+[1m[92m   Compiling[0m wgpu-core v29.0.4
+[1m[92m   Compiling[0m field-offset v0.3.6
+[1m[92m   Compiling[0m const-random v0.1.18
+[1m[92m   Compiling[0m nix v0.31.3
+[1m[92m   Compiling[0m x11 v2.21.0
+[1m[92m   Compiling[0m async-compression v0.4.43
+[1m[92m   Compiling[0m rustls-webpki v0.103.13
+[1m[92m   Compiling[0m httparse v1.10.1
+[1m[92m   Compiling[0m atspi-proxies v0.13.0
+[1m[92m   Compiling[0m x11rb v0.13.2
+[1m[92m   Compiling[0m skrifa v0.40.0
+[1m[92m   Compiling[0m harfrust v0.5.2
+[1m[92m   Compiling[0m freetype-sys v0.20.1
+[1m[92m   Compiling[0m yeslogic-fontconfig-sys v6.0.1
+[1m[92m   Compiling[0m atk v0.18.2
+[1m[92m   Compiling[0m accesskit_consumer v0.38.0
+[1m[92m   Compiling[0m async-net v2.0.0
+[1m[92m   Compiling[0m is-docker v0.2.0
+[1m[92m   Compiling[0m encoding_rs v0.8.35
+[1m[92m   Compiling[0m fastrand v1.9.0
+[1m[92m   Compiling[0m self_cell v1.3.0
+[1m[92m   Compiling[0m home v0.5.12
+[1m[92m   Compiling[0m unicode-linebreak v0.1.5
+[1m[92m   Compiling[0m sys-locale v0.3.2
+[1m[92m   Compiling[0m lazy_static v1.5.0
+[1m[92m   Compiling[0m rangemap v1.7.1
+[1m[92m   Compiling[0m float-ord v0.3.2
+[1m[92m   Compiling[0m linebender_resource_handle v0.1.1
+[1m[92m   Compiling[0m zed-font-kit v0.14.1-zed
+[1m[92m   Compiling[0m cosmic-text v0.19.0
+[1m[92m   Compiling[0m xim-ctext v0.3.0
+[1m[92m   Compiling[0m which v6.0.3
+[1m[92m   Compiling[0m futures-lite v1.13.0
+[1m[92m   Compiling[0m is-wsl v0.4.0
+[1m[92m   Compiling[0m smol v2.0.2
+[1m[92m   Compiling[0m accesskit_atspi_common v0.19.1
+[1m[92m   Compiling[0m gtk v0.18.2
+[1m[92m   Compiling[0m atspi v0.29.0
+[1m[92m   Compiling[0m hyper v1.11.0
+[1m[92m   Compiling[0m wgpu v29.0.4
+[1m[92m   Compiling[0m rustls v0.23.43
+[1m[92m   Compiling[0m async_zip v0.0.18
+[1m[92m   Compiling[0m libxdo-sys v0.11.0
+[1m[92m   Compiling[0m command-fds v0.3.3
+[1m[92m   Compiling[0m ahash v0.8.12
+[1m[92m   Compiling[0m rust-embed v8.12.0
+[1m[92m   Compiling[0m nix v0.29.0
+[1m[92m   Compiling[0m libdbus-sys v0.2.7
+[1m[92m   Compiling[0m num-bigint-dig v0.9.1
+[1m[92m   Compiling[0m xim-parser v0.2.2
+[1m[92m   Compiling[0m serde_json_lenient v0.2.4
+[1m[92m   Compiling[0m ashpd v0.13.13
+[1m[92m   Compiling[0m pbkdf2 v0.12.2
+[1m[92m   Compiling[0m md-5 v0.10.6
+[1m[92m   Compiling[0m calloop v0.14.4
+[1m[92m   Compiling[0m tempfile v3.27.0
+[1m[92m   Compiling[0m sync_wrapper v1.0.2
+[1m[92m   Compiling[0m libloading v0.7.4
+[1m[92m   Compiling[0m tower-layer v0.3.3
+[1m[92m   Compiling[0m shlex v1.3.0
+[1m[92m   Compiling[0m ipnet v2.12.1
+[1m[92m   Compiling[0m dunce v1.0.5
+[1m[92m   Compiling[0m xkeysym v0.2.1
+[1m[92m   Compiling[0m hashbrown v0.14.5
+[1m[92m   Compiling[0m take-until v0.2.0
+[1m[92m   Compiling[0m gpui_zed_util v0.2.2 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
+[1m[92m   Compiling[0m xkbcommon v0.8.0
+[1m[92m   Compiling[0m zed-xim v0.4.0-zed
+[1m[92m   Compiling[0m hyper-util v0.1.20
+[1m[92m   Compiling[0m tower v0.5.3
+[1m[92m   Compiling[0m libappindicator-sys v0.9.0
+[1m[92m   Compiling[0m calloop-wayland-source v0.4.1
+[1m[92m   Compiling[0m oo7 v0.6.0
+[1m[92m   Compiling[0m tokio-rustls v0.26.4
+[1m[92m   Compiling[0m dbus v0.9.12
+[1m[92m   Compiling[0m libxdo v0.6.0
+[1m[92m   Compiling[0m gpui_wgpu v0.1.0 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
+[1m[92m   Compiling[0m accesskit_unix v0.22.1
+[1m[92m   Compiling[0m open v5.4.1
+[1m[92m   Compiling[0m x11-clipboard v0.9.3
+[1m[92m   Compiling[0m wayland-protocols-wlr v0.3.12
+[1m[92m   Compiling[0m wayland-protocols-plasma v0.3.12
+[1m[92m   Compiling[0m wayland-cursor v0.31.14
+[1m[92m   Compiling[0m webpki-roots v1.0.9
+[1m[92m   Compiling[0m keyboard-types v0.7.0
+[1m[92m   Compiling[0m filedescriptor v0.8.3
+[1m[92m   Compiling[0m crossbeam-channel v0.5.16
+[1m[92m   Compiling[0m dpi v0.1.2
+[1m[92m   Compiling[0m gpui_linux v0.1.0 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
+[1m[92m   Compiling[0m hyper-rustls v0.27.9
+[1m[92m   Compiling[0m dbus-secret-service v4.1.0
+[1m[92m   Compiling[0m tower-http v0.6.11
+[1m[92m   Compiling[0m serde_urlencoded v0.7.1
+[1m[92m   Compiling[0m http-body-util v0.1.4
+[1m[92m   Compiling[0m linux-keyutils v0.2.5
+[1m[92m   Compiling[0m num-conv v0.2.2
+[1m[92m   Compiling[0m time-core v0.1.9
+[1m[92m   Compiling[0m num_threads v0.1.7
+[1m[92m   Compiling[0m powerfmt v0.2.0
+[1m[92m   Compiling[0m deranged v0.5.8
+[1m[92m   Compiling[0m keyring v3.6.3
+[1m[92m   Compiling[0m reqwest v0.12.28
+[1m[92m   Compiling[0m libappindicator v0.9.0
+[1m[92m   Compiling[0m muda v0.17.2
+[1m[92m   Compiling[0m tray-icon v0.21.3
+[1m[92m   Compiling[0m gpui_platform v0.1.0 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
+[1m[92m   Compiling[0m time v0.3.55
+[1m[92m   Compiling[0m gpui_elements v0.1.0 (https://github.com/gpui-ce/gpui-ce?rev=60436515630ef254bfa17d51d1bb717a51d66f37#60436515)
+[1m[92m   Compiling[0m usage-radar v0.3.6 (/home/runner/work/usage-radar/usage-radar/validation/project)
+[1m[91merror[0m[1m: unused import: `App as GpuiApp`[0m
+  [1m[94m--> [0msrc/app/mod.rs:11:21
+   [1m[94m|[0m
+[1m[94m11[0m [1m[94m|[0m use gpui::{actions, App as GpuiApp, ClipboardItem, Context, KeyBinding};
+   [1m[94m|[0m                     [1m[91m^^^^^^^^^^^^^^[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `-D unused-imports` implied by `-D warnings`
+   [1m[94m= [0m[1mhelp[0m: to override `-D warnings` add `#[allow(unused_imports)]`
+
+[1m[91merror[0m[1m: unused import: `Confidence`[0m
+  [1m[94m--> [0msrc/app/mod.rs:15:30
+   [1m[94m|[0m
+[1m[94m15[0m [1m[94m|[0m use crate::providers::{self, Confidence, ProviderKind, ProviderSnapshot};
+   [1m[94m|[0m                              [1m[91m^^^^^^^^^^[0m
+
+[1m[91merror[0m[1m: unused import: `Path`[0m
+ [1m[94m--> [0msrc/providers/codex.rs:2:17
+  [1m[94m|[0m
+[1m[94m2[0m [1m[94m|[0m use std::path::{Path, PathBuf};
+  [1m[94m|[0m                 [1m[91m^^^^[0m
+
+[1m[91merror[E0599][0m[1m: no method named `background_spawn` found for mutable reference `&mut AsyncApp` in the current scope[0m
+  [1m[94m--> [0msrc/app/mod.rs:85:16
+   [1m[94m|[0m
+[1m[94m85[0m [1m[94m|[0m             cx.background_spawn(async {
+   [1m[94m|[0m             [1m[94m---[0m[1m[91m^^^^^^^^^^^^^^^^[0m [1m[91mmethod not found in `&mut AsyncApp`[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mhelp[0m: items from traits can only be used if the trait is in scope
+[1m[96mhelp[0m: trait `AppContext` which provides `background_spawn` is implemented but not in scope; perhaps you want to import it
+   [1m[94m|[0m
+[1m[94m 1[0m [92m+ use gpui::AppContext;[0m
+   [1m[94m|[0m
+
+[1m[91merror[E0599][0m[1m: no method named `new` found for mutable reference `&mut gpui::App` in the current scope[0m
+   [1m[94m--> [0msrc/app/mod.rs:223:34
+    [1m[94m|[0m
+[1m[94m223[0m [1m[94m|[0m             move |window, cx| cx.new(|cx| PanelView::new(app_entity.clone(), window, cx)),
+    [1m[94m|[0m                                  [1m[91m^^^[0m [1m[91mmethod not found in `&mut gpui::App`[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: items from traits can only be used if the trait is in scope
+[1m[96mhelp[0m: trait `AppContext` which provides `new` is implemented but not in scope; perhaps you want to import it
+    [1m[94m|[0m
+[1m[94m  1[0m [92m+ use gpui::AppContext;[0m
+    [1m[94m|[0m
+
+[1m[91merror[E0599][0m[1m: no method named `background_spawn` found for mutable reference `&mut AsyncApp` in the current scope[0m
+   [1m[94m--> [0msrc/app/mod.rs:417:30
+    [1m[94m|[0m
+[1m[94m416[0m [1m[94m|[0m                           let result = cx
+    [1m[94m|[0m [1m[94m ______________________________________-[0m
+[1m[94m417[0m [1m[94m|[0m [1m[94m|[0m                             .background_spawn(async move {
+    [1m[94m|[0m [1m[94m|[0m                             [1m[94m-[0m[1m[91m^^^^^^^^^^^^^^^^[0m [1m[91mmethod not found in `&mut AsyncApp`[0m
+    [1m[94m|[0m [1m[94m|_____________________________|[0m
+    [1m[94m|[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: items from traits can only be used if the trait is in scope
+[1m[96mhelp[0m: trait `AppContext` which provides `background_spawn` is implemented but not in scope; perhaps you want to import it
+    [1m[94m|[0m
+[1m[94m  1[0m [92m+ use gpui::AppContext;[0m
+    [1m[94m|[0m
+
+[1m[91merror[E0599][0m[1m: no method named `background_spawn` found for mutable reference `&mut AsyncApp` in the current scope[0m
+   [1m[94m--> [0msrc/app/mod.rs:529:18
+    [1m[94m|[0m
+[1m[94m528[0m [1m[94m|[0m               let result = cx
+    [1m[94m|[0m [1m[94m __________________________-[0m
+[1m[94m529[0m [1m[94m|[0m [1m[94m|[0m                 .background_spawn(async move {
+    [1m[94m|[0m [1m[94m|[0m                 [1m[94m-[0m[1m[91m^^^^^^^^^^^^^^^^[0m [1m[91mmethod not found in `&mut AsyncApp`[0m
+    [1m[94m|[0m [1m[94m|_________________|[0m
+    [1m[94m|[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: items from traits can only be used if the trait is in scope
+[1m[96mhelp[0m: trait `AppContext` which provides `background_spawn` is implemented but not in scope; perhaps you want to import it
+    [1m[94m|[0m
+[1m[94m  1[0m [92m+ use gpui::AppContext;[0m
+    [1m[94m|[0m
+
+[1m[91merror[E0599][0m[1m: no method named `background_spawn` found for mutable reference `&mut AsyncApp` in the current scope[0m
+   [1m[94m--> [0msrc/app/mod.rs:561:26
+    [1m[94m|[0m
+[1m[94m560[0m [1m[94m|[0m                       let result = cx
+    [1m[94m|[0m [1m[94m __________________________________-[0m
+[1m[94m561[0m [1m[94m|[0m [1m[94m|[0m                         .background_spawn(async move {
+    [1m[94m|[0m [1m[94m|[0m                         [1m[94m-[0m[1m[91m^^^^^^^^^^^^^^^^[0m [1m[91mmethod not found in `&mut AsyncApp`[0m
+    [1m[94m|[0m [1m[94m|_________________________|[0m
+    [1m[94m|[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: items from traits can only be used if the trait is in scope
+[1m[96mhelp[0m: trait `AppContext` which provides `background_spawn` is implemented but not in scope; perhaps you want to import it
+    [1m[94m|[0m
+[1m[94m  1[0m [92m+ use gpui::AppContext;[0m
+    [1m[94m|[0m
+
+[1m[91merror[E0599][0m[1m: no method named `background_spawn` found for mutable reference `&mut AsyncApp` in the current scope[0m
+   [1m[94m--> [0msrc/app/mod.rs:683:18
+    [1m[94m|[0m
+[1m[94m682[0m [1m[94m|[0m               let outcomes = cx
+    [1m[94m|[0m [1m[94m ____________________________-[0m
+[1m[94m683[0m [1m[94m|[0m [1m[94m|[0m                 .background_spawn(async move {
+    [1m[94m|[0m [1m[94m|[0m                 [1m[94m-[0m[1m[91m^^^^^^^^^^^^^^^^[0m [1m[91mmethod not found in `&mut AsyncApp`[0m
+    [1m[94m|[0m [1m[94m|_________________|[0m
+    [1m[94m|[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mhelp[0m: items from traits can only be used if the trait is in scope
+[1m[96mhelp[0m: trait `AppContext` which provides `background_spawn` is implemented but not in scope; perhaps you want to import it
+    [1m[94m|[0m
+[1m[94m  1[0m [92m+ use gpui::AppContext;[0m
+    [1m[94m|[0m
+
+[1m[91merror[E0599][0m[1m: no method named `new` found for mutable reference `&mut gpui::App` in the current scope[0m
+  [1m[94m--> [0msrc/main.rs:26:26
+   [1m[94m|[0m
+[1m[94m26[0m [1m[94m|[0m             let app = cx.new(UsageRadarApp::new);
+   [1m[94m|[0m                          [1m[91m^^^[0m [1m[91mmethod not found in `&mut gpui::App`[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mhelp[0m: items from traits can only be used if the trait is in scope
+[1m[96mhelp[0m: trait `AppContext` which provides `new` is implemented but not in scope; perhaps you want to import it
+   [1m[94m|[0m
+[1m[94m 6[0m [92m+ use gpui::AppContext;[0m
+   [1m[94m|[0m
+
+[1mFor more information about this error, try `rustc --explain E0599`.[0m
+[1m[91merror[0m: could not compile `usage-radar` (bin "usage-radar" test) due to 10 previous errors
