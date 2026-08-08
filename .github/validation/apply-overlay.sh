@@ -25,6 +25,22 @@ patch(
 )
 patch(
     "src/app/mod.rs",
+    """        self.shell_task = Some(cx.spawn(async move |this, cx| loop {
+            cx.background_spawn(async {
+                std::thread::sleep(Duration::from_millis(75));
+            })
+            .await;
+
+            let keep_running = this""",
+    """        self.shell_task = Some(cx.spawn(async move |this, cx| loop {
+            cx.background_executor()
+                .timer(Duration::from_millis(75))
+                .await;
+
+            let keep_running = this""",
+)
+patch(
+    "src/app/mod.rs",
     "    pub(super) fn provider_card_model(&self, kind: ProviderKind) -> ProviderCardModel {",
     "    fn provider_card_model(&self, kind: ProviderKind) -> ProviderCardModel {",
 )
@@ -86,11 +102,11 @@ patch(
 )
 patch("src/theme.rs", "use gpui::{Hsla, hsla, rgb};", "use gpui::{rgb, Hsla};")
 for line in [
-    "    pub accent_hover: Hsla;\n",
-    "    pub accent_active: Hsla;\n",
-    "    pub danger_soft: Hsla;\n",
-    "    pub success: Hsla;\n",
-    "    pub shadow: Hsla;\n",
+    "    pub accent_hover: Hsla,\n",
+    "    pub accent_active: Hsla,\n",
+    "    pub danger_soft: Hsla,\n",
+    "    pub success: Hsla,\n",
+    "    pub shadow: Hsla,\n",
     "            accent_hover: color(0x2d63ca),\n",
     "            accent_active: color(0x2858b5),\n",
     "            danger_soft: color(0xffecee),\n",
