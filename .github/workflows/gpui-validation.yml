@@ -5,7 +5,7 @@ on:
     branches:
       - tmp/gpui-migration-validation-20260808
     paths:
-      - .github/validation/project.zip.b64
+      - .github/validation/project.zip.b64.part*
   workflow_dispatch:
 
 permissions:
@@ -25,7 +25,7 @@ jobs:
       - name: Restore project snapshot
         run: |
           mkdir -p validation/project
-          base64 --decode .github/validation/project.zip.b64 > validation/project.zip
+          cat .github/validation/project.zip.b64.part* | base64 --decode > validation/project.zip
           unzip -q validation/project.zip -d validation/project
       - name: Install Linux build dependencies
         run: |
