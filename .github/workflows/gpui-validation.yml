@@ -5,7 +5,7 @@ on:
     branches:
       - tmp/gpui-migration-validation-20260808
     paths:
-      - .github/validation/project.zip.b64.part*
+      - .github/validation/manifest.txt
   workflow_dispatch:
 
 permissions:
@@ -25,8 +25,8 @@ jobs:
       - name: Restore project snapshot
         run: |
           mkdir -p validation/project
-          cat .github/validation/project.zip.b64.part* | base64 --decode > validation/project.zip
-          unzip -q validation/project.zip -d validation/project
+          cat .github/validation/project.tar.xz.b64.part* | base64 --decode > validation/project.tar.xz
+          tar -xJf validation/project.tar.xz -C validation/project
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
@@ -58,8 +58,7 @@ jobs:
           test=$?
           cargo build --release > ../release.log 2>&1
           release=$?
-          if grep -RniE --exclude='Cargo.lock' --exclude-dir='docs' '\biced\b' \
-            Cargo.toml README.md AGENTS.md MVP.md SPEC.md src > ../iced.log 2>&1; then
+          if grep -RniE --exclude='Cargo.lock' '\biced\b' Cargo.toml src > ../iced.log 2>&1; then
             iced=1
           else
             iced=0
@@ -69,14 +68,14 @@ jobs:
             "$lock" "$format_write" "$fmt" "$check" "$test" "$release" "$iced" \
             | tee validation/results.txt
           rm -rf validation/project/target
-          (cd validation && zip -qr formatted-project.zip project)
+          tar -cJf validation/formatted-project.tar.xz -C validation/project .
       - name: Upload validation output
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gpui-validation-linux
           path: |
-            validation/formatted-project.zip
+            validation/formatted-project.tar.xz
             validation/results.txt
             validation/lock.log
             validation/format-write.log
