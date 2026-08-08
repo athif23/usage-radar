@@ -100,6 +100,11 @@ patch(
     "\n    pub fn from_u8(value: u8) -> Self {\n        match value {\n            1 => Self::Dark,\n            _ => Self::Light,\n        }\n    }\n",
     "\n",
 )
+patch(
+    "src/util/startup.rs",
+    'const STARTUP_FILE_NAME: &str = "Usage Radar.cmd";',
+    '#[cfg(target_os = "windows")]\nconst STARTUP_FILE_NAME: &str = "Usage Radar.cmd";',
+)
 patch("src/theme.rs", "use gpui::{Hsla, hsla, rgb};", "use gpui::{rgb, Hsla};")
 for line in [
     "    pub accent_hover: Hsla,\n",
