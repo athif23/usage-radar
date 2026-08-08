@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: gpui-validation-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: true
@@ -90,18 +94,24 @@ jobs:
         shell: bash
         run: |
           set -e
+          stage=/tmp/gpui-validation-output
           output=.github/validation/output
-          rm -rf "$output"
-          mkdir -p "$output"
-          cp validation/results.txt "$output/results.txt" || true
-          cp validation/*.log "$output/" || true
+          rm -rf "$stage"
+          mkdir -p "$stage"
+          cp validation/results.txt "$stage/results.txt" || true
+          cp validation/*.log "$stage/" || true
           if [ -f validation/formatted-project.tar.xz ]; then
-            base64 -w0 validation/formatted-project.tar.xz > "$output/formatted-project.tar.xz.b64"
-            split -b 16000 -d -a 2 "$output/formatted-project.tar.xz.b64" "$output/formatted-project.tar.xz.b64.part"
-            rm "$output/formatted-project.tar.xz.b64"
+            base64 -w0 validation/formatted-project.tar.xz > "$stage/formatted-project.tar.xz.b64"
+            split -b 16000 -d -a 2 "$stage/formatted-project.tar.xz.b64" "$stage/formatted-project.tar.xz.b64.part"
+            rm "$stage/formatted-project.tar.xz.b64"
           fi
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git fetch origin tmp/gpui-migration-validation-20260808
+          git reset --hard origin/tmp/gpui-migration-validation-20260808
+          rm -rf "$output"
+          mkdir -p "$output"
+          cp -a "$stage"/. "$output"/
           git add "$output"
           if ! git diff --cached --quiet; then
             git commit -m "ci: publish GPUI validation output [skip ci]"
