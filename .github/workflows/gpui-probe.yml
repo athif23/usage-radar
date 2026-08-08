@@ -26,6 +26,7 @@ jobs:
           mkdir -p validation/project
           cat .github/validation/project.tar.xz.b64.part* | base64 --decode > validation/project.tar.xz
           tar -xJf validation/project.tar.xz -C validation/project
+          bash .github/validation/apply-overlay.sh validation/project
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
